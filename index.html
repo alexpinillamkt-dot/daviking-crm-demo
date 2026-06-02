@@ -1,0 +1,2129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daviking CRM · Cierre + Ventas & KPIs</title>
+<style>
+  :root{
+    --bg:#0B0E14; --bg-2:#0E1116; --surface:#13161F; --surface-2:#171B26; --surface-3:#1C2130;
+    --hover:#1E2433; --line:rgba(255,255,255,.07); --line-2:rgba(255,255,255,.11);
+    --ink:#E7EAF2; --ink-2:#AEB6C8; --muted:#7C8499; --faint:#5A6175;
+    --brand:#34D399; --brand-2:#10B981; --brand-soft:rgba(52,211,153,.14); --brand-line:rgba(52,211,153,.36);
+    --aurora:linear-gradient(120deg,#10B981 0%,#34D399 42%,#22D3EE 80%,#A3E635 112%);
+    --green:#43D6A0; --green-bg:rgba(67,214,160,.12); --green-line:rgba(67,214,160,.3);
+    --amber:#F0B45A; --amber-bg:rgba(240,180,90,.12); --amber-line:rgba(240,180,90,.3);
+    --red:#F4707E; --red-bg:rgba(244,112,126,.13); --red-line:rgba(244,112,126,.34);
+    --blue:#5BAEF6; --blue-bg:rgba(91,174,246,.12); --blue-line:rgba(91,174,246,.3);
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 28px -10px rgba(0,0,0,.55);
+    --shadow-lg:0 20px 60px -16px rgba(0,0,0,.7);
+    --r:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+    background:
+      radial-gradient(1200px 600px at 80% -8%, rgba(52,211,153,.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(34,211,238,.05), transparent 55%),
+      var(--bg);
+    color:var(--ink); font-size:14px; -webkit-font-smoothing:antialiased; line-height:1.5;
+  }
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit}
+  ::selection{background:rgba(52,211,153,.35)}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#262C3B;border-radius:8px;border:2px solid transparent;background-clip:padding-box}
+  ::-webkit-scrollbar-thumb:hover{background:#323A4D;background-clip:padding-box}
+
+  .layout{display:flex;min-height:100vh}
+
+  /* ===== SIDEBAR ===== */
+  .sidebar{width:236px;flex-shrink:0;background:linear-gradient(180deg,var(--bg-2),#0A0D13);border-right:1px solid var(--line);padding:22px 14px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+  .logo{display:flex;align-items:center;gap:11px;padding:6px 8px 0}
+  .logo .mark{width:38px;height:38px;border-radius:12px;background:var(--aurora);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 18px -6px rgba(52,211,153,.7)}
+  .logo .ttl{font-weight:700;color:#fff;font-size:16px;letter-spacing:-.01em;line-height:1.15}
+  .logo .ttl small{display:block;font-weight:500;color:var(--faint);font-size:10.5px;letter-spacing:.03em;margin-top:2px}
+  .nav{margin-top:28px;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+  .nav a{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:11px;color:var(--ink-2);font-weight:500;cursor:pointer;transition:background .13s,color .13s;position:relative;font-size:14px}
+  .nav a:hover{background:var(--hover);color:#fff}
+  .nav a.active{background:var(--brand-soft);color:#fff}
+  .nav a.active::before{content:"";position:absolute;left:-14px;top:50%;transform:translateY(-50%);width:3px;height:20px;border-radius:0 3px 3px 0;background:var(--brand)}
+  .nav .ico{width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+  .nav .count{margin-left:auto;font-size:11px;font-weight:700;min-width:20px;height:18px;padding:0 6px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--surface-3);color:var(--ink-2)}
+  .nav a.active .count{background:rgba(255,255,255,.14);color:#fff}
+  .nav .count.red{background:var(--red-bg);color:var(--red)}
+  .nav .count.amber{background:var(--amber-bg);color:var(--amber)}
+  .nav .count.green{background:var(--green-bg);color:var(--green)}
+  .demo-badge{margin-top:auto;background:rgba(52,211,153,.06);border:1px dashed var(--brand-line);border-radius:12px;padding:12px 13px;font-size:11px;color:var(--ink-2);line-height:1.55}
+  .demo-badge b{color:#A7E8CC}
+
+  /* ===== MAIN ===== */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{background:rgba(11,14,20,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:14px 36px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;gap:18px}
+  .topbar .tt{font-size:19px;font-weight:650;letter-spacing:-.01em}
+  .topbar .tt small{display:block;font-weight:500;color:var(--muted);font-size:12px;margin-top:2px}
+  .topbar-right{display:flex;align-items:center;gap:12px}
+  .closer-switch{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line-2);border-radius:12px;padding:5px 7px 5px 12px}
+  .closer-switch .lab{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+  .closer-switch .seg2{display:inline-flex;background:var(--bg-2);border:1px solid var(--line);border-radius:9px;padding:3px;gap:2px}
+  .closer-switch .seg2 button{font-size:12.5px;font-weight:650;padding:6px 13px;border-radius:7px;border:none;background:transparent;color:var(--ink-2);cursor:pointer;transition:all .12s;display:inline-flex;align-items:center;gap:7px}
+  .closer-switch .seg2 button:hover{color:#fff}
+  .closer-switch .seg2 button.on{background:var(--brand-soft);color:#fff;box-shadow:0 0 0 1px var(--brand-line)}
+  .help-btn{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:650;padding:8px 13px;border-radius:10px;border:1px solid var(--brand-line);background:var(--brand-soft);color:#A7E8CC;cursor:pointer;transition:all .12s}
+  .help-btn:hover{background:rgba(52,211,153,.2)}
+
+  .maq-banner{background:var(--amber-bg);border-bottom:1px solid var(--amber-line);padding:9px 36px;font-size:12px;color:#F6E2C2;display:flex;align-items:center;gap:9px}
+  .maq-banner b{color:#fff}
+  .maq-banner .bi{font-size:15px}
+
+  .content{padding:30px 36px 90px;max-width:1240px;width:100%;margin:0 auto}
+  .view{display:none}
+  .view.active{display:block}
+
+  /* ===== TÍTULOS ===== */
+  .h-eyebrow{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.13em;color:var(--brand);margin:0 0 5px}
+  .h-big{font-size:25px;font-weight:700;letter-spacing:-.02em;margin:0 0 4px;color:#fff;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .h-big small{font-size:12.5px;font-weight:500;color:var(--muted);letter-spacing:0;display:block;margin-top:5px;width:100%}
+  .h-sub{font-size:13px;font-weight:500;color:var(--muted);margin:0 0 26px}
+  .h-row{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:24px;flex-wrap:wrap}
+  .h-row .h-sub{margin:0}
+
+  /* ===== OVERVIEW · TARJETAS ===== */
+  .bigcards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px}
+  .bigcard{position:relative;background:linear-gradient(180deg,var(--surface),var(--bg-2));border:1px solid var(--line);border-radius:18px;padding:20px 20px 18px;overflow:hidden;transition:transform .14s,border-color .14s}
+  .bigcard:hover{transform:translateY(-3px);border-color:var(--line-2)}
+  .bigcard .ico{font-size:18px;opacity:.9}
+  .bigcard .n{font-size:38px;font-weight:760;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1;margin-top:14px}
+  .bigcard .n .u{font-size:16px;font-weight:650;color:var(--muted);margin-left:2px}
+  .bigcard .l{color:var(--muted);font-size:12.5px;margin-top:9px;font-weight:500;line-height:1.4}
+  .bigcard .trend{margin-top:11px;font-size:12px;font-weight:650;display:inline-flex;align-items:center;gap:6px}
+  .bigcard .trend.up{color:var(--green)} .bigcard .trend.flat{color:var(--muted)}
+  .bigcard.green .n{color:var(--green)}
+  .bigcard.amber .n{color:var(--amber)}
+  .bigcard.hero{border-color:var(--brand-line)}
+  .bigcard.hero::after{content:"";position:absolute;inset:0;background:radial-gradient(280px 130px at 90% -20%,rgba(52,211,153,.20),transparent 70%);pointer-events:none}
+  .bigcard.hero .n{color:#fff}
+
+  /* ===== CASH COLLECTED ===== */
+  .cashcard{background:linear-gradient(135deg,rgba(52,211,153,.10),rgba(34,211,238,.04));border:1px solid var(--brand-line);border-radius:18px;padding:24px 26px;box-shadow:var(--shadow);margin-bottom:18px}
+  .cashcard .ch{display:flex;align-items:center;gap:11px;margin-bottom:18px;flex-wrap:wrap}
+  .cashcard .ch h2{margin:0;font-size:17px;font-weight:700;letter-spacing:-.01em;color:#fff}
+  .cashcard .ch .sub{font-size:12px;color:var(--ink-2);margin-top:2px}
+  .cashgrid{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:18px;align-items:start}
+  .cashbig .cv{font-size:34px;font-weight:760;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
+  .cashbig.cobrado .cv{color:var(--green)}
+  .cashbig .cl{font-size:11.5px;color:var(--muted);margin-top:7px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+  .cashbig .cnote{font-size:12px;color:var(--ink-2);margin-top:6px}
+  .cashbar{margin-top:16px;grid-column:1/-1}
+  .cashbar .cbtop{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--muted);margin-bottom:8px}
+  .cashbar .cbtop b{color:var(--ink)}
+  .cashbar .track{height:13px;border-radius:7px;background:var(--surface-3);overflow:hidden;display:flex}
+  .cashbar .track > i{display:block;height:100%}
+  .cashbar .track > i.done{background:linear-gradient(90deg,#43D6A0,#22D3EE)}
+  .cashbar .track > i.pend{background:repeating-linear-gradient(45deg,rgba(240,180,90,.4),rgba(240,180,90,.4) 6px,rgba(240,180,90,.18) 6px,rgba(240,180,90,.18) 12px)}
+  .cashbar .cblegend{display:flex;gap:18px;margin-top:11px;font-size:11.5px;color:var(--muted)}
+  .cashbar .cblegend span{display:inline-flex;align-items:center;gap:7px}
+  .cashbar .cblegend i{width:12px;height:12px;border-radius:3px}
+  .cashbar .cblegend i.done{background:linear-gradient(90deg,#43D6A0,#22D3EE)}
+  .cashbar .cblegend i.pend{background:repeating-linear-gradient(45deg,rgba(240,180,90,.5),rgba(240,180,90,.5) 4px,rgba(240,180,90,.2) 4px,rgba(240,180,90,.2) 8px)}
+
+  /* ===== TAREAS HOY / PENDIENTE ===== */
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;box-shadow:var(--shadow);margin-bottom:18px}
+  .card h3{margin:0 0 14px;font-size:14.5px;font-weight:680;display:flex;align-items:center;gap:9px}
+  .card h3 .cnt{margin-left:auto;font-size:11px;font-weight:700;padding:3px 9px;border-radius:8px;background:var(--surface-3);color:var(--ink-2)}
+  .card h3 .cnt.red{background:var(--red-bg);color:var(--red)}
+  .card h3 .cnt.amber{background:var(--amber-bg);color:var(--amber)}
+  .card h3 .pip{margin-left:auto;font-size:11px;font-weight:600;color:var(--muted)}
+  .todo{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer;transition:background .1s;border-radius:8px}
+  .todo:last-child{border-bottom:none}
+  .todo:hover{background:var(--hover)}
+  .todo .tdico{width:34px;height:34px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--surface-3)}
+  .todo.blue .tdico{background:var(--blue-bg)} .todo.amber .tdico{background:var(--amber-bg)} .todo.green .tdico{background:var(--green-bg)} .todo.red .tdico{background:var(--red-bg)}
+  .todo .tdx{flex:1;min-width:0}
+  .todo .tdt{font-weight:600;font-size:13.5px}
+  .todo .tdm{font-size:12px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .todo .tdgo{font-size:18px;color:var(--faint);flex-shrink:0;align-self:center}
+  .empty{text-align:center;color:var(--muted);padding:26px 10px;font-size:13px}
+  .empty .em{font-size:30px;margin-bottom:8px;opacity:.7}
+
+  /* ===== PILLS ===== */
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;font-size:11.5px;font-weight:650;white-space:nowrap;border:1px solid transparent}
+  .pill.green{background:var(--green-bg);color:var(--green);border-color:var(--green-line)}
+  .pill.amber{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-line)}
+  .pill.red{background:var(--red-bg);color:var(--red);border-color:var(--red-line)}
+  .pill.blue{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-line)}
+  .pill.brand{background:var(--brand-soft);color:#A7E8CC;border-color:var(--brand-line)}
+  .pill.ghost{background:var(--surface-3);color:var(--ink-2);border-color:var(--line)}
+  .pill.sm{padding:2px 8px;font-size:10.5px}
+  .dot-s{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block}
+  .tbc{font-size:9px;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(240,180,90,.12);color:var(--amber);letter-spacing:.03em;border:1px dashed var(--amber-line);text-transform:uppercase}
+
+  /* ===== BOTONES ===== */
+  .btn{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--ink);cursor:pointer;transition:all .12s}
+  .btn:hover{background:var(--hover);transform:translateY(-1px)}
+  .btn.primary{background:var(--brand-2);border-color:transparent;color:#04130d;box-shadow:0 6px 16px -8px rgba(16,185,129,.8);font-weight:700}
+  .btn.primary:hover{background:#0fce8a}
+  .btn.green{background:var(--green-bg);border-color:var(--green-line);color:var(--green)}
+  .btn.red{background:var(--red-bg);border-color:var(--red-line);color:var(--red)}
+  .btn.amber{background:var(--amber-bg);border-color:var(--amber-line);color:var(--amber)}
+  .btn.blue{background:var(--blue-bg);border-color:var(--blue-line);color:var(--blue)}
+  .btn.sm{padding:6px 10px;font-size:11.5px}
+  .btn.block{width:100%;justify-content:center}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+
+  /* ===== AVATAR ===== */
+  .avatar{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#04130d;flex-shrink:0}
+  .avatar.sm{width:22px;height:22px;font-size:10px}
+  .avatar.lg{width:46px;height:46px;font-size:17px}
+  .avatar.pascu{background:linear-gradient(135deg,#34D399,#22D3EE)}
+  .avatar.alvaro{background:linear-gradient(135deg,#F0B45A,#E879F9);color:#1a0f1f}
+  .avatar.general{background:linear-gradient(135deg,#10B981,#22D3EE 55%,#A3E635)}
+  /* etiqueta de dueño (closer) en tarjetas, visible en modo General */
+  .owntag{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;padding:2px 8px 2px 3px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface-3);color:var(--ink-2);margin-left:auto;flex-shrink:0}
+  .owntag .avatar.sm{width:18px;height:18px;font-size:9px}
+  /* comparación Pascu vs Álvaro en modo General */
+  .vs-wrap{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:stretch;margin-bottom:18px}
+  .vs-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;position:relative;overflow:hidden}
+  .vs-card.lead{border-color:var(--brand-line)}
+  .vs-card.lead::after{content:"";position:absolute;inset:0;background:radial-gradient(220px 110px at 100% -20%,rgba(52,211,153,.16),transparent 70%);pointer-events:none}
+  .vs-card .vh{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+  .vs-card .vh .nm{font-weight:680;font-size:14px}
+  .vs-card .vh .crown{margin-left:auto;font-size:11px;font-weight:700;color:#A7E8CC;display:inline-flex;align-items:center;gap:4px}
+  .vs-card .vrow{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+  .vs-card .vrow:last-child{border-bottom:none}
+  .vs-card .vrow .vl{color:var(--muted)}
+  .vs-card .vrow .vv{font-weight:700;font-variant-numeric:tabular-nums}
+  .vs-card .vrow .vv.green{color:var(--green)}
+  .vs-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--faint)}
+  .vs-mid .vsbig{font-size:20px;font-weight:800;color:var(--brand)}
+  .vs-mid .vssm{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+
+  /* ===== KANBAN ===== */
+  .pipe-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+  .seg{display:inline-flex;background:var(--surface);border:1px solid var(--line-2);border-radius:11px;padding:3px;gap:2px}
+  .seg button{font-family:inherit;font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:8px;border:none;background:transparent;color:var(--ink-2);cursor:pointer;transition:all .12s}
+  .seg button:hover{color:#fff}
+  .seg button.on{background:var(--brand-soft);color:#fff}
+  .kanban{display:flex;gap:14px;overflow-x:auto;padding-bottom:14px;align-items:flex-start}
+  .kcol{flex:0 0 270px;background:var(--bg-2);border:1px solid var(--line);border-radius:15px;padding:13px;min-height:120px}
+  .kcol-h{display:flex;align-items:center;gap:8px;margin-bottom:13px;padding:0 3px}
+  .kcol-h .kdot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+  .kcol-h .kt{font-weight:680;font-size:13px}
+  .kcol-h .kc{margin-left:auto;font-size:11px;font-weight:700;padding:2px 8px;border-radius:7px;background:var(--surface-3);color:var(--ink-2)}
+  .kcol-cards{display:flex;flex-direction:column;gap:10px}
+  .kc-empty{font-size:12px;color:var(--faint);text-align:center;padding:16px 8px;font-style:italic}
+
+  /* ===== TARJETA DE LEAD ===== */
+  .leadcard{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:14px 15px;box-shadow:var(--shadow);cursor:pointer;transition:transform .12s,border-color .12s,background .12s;position:relative;overflow:hidden}
+  .leadcard:hover{transform:translateY(-2px);background:var(--surface-2);border-color:var(--line-2)}
+  .leadcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px}
+  .leadcard.s-nuevo::before{background:var(--blue)}
+  .leadcard.s-validado::before{background:#A78BFA}
+  .leadcard.s-confirmado::before{background:var(--brand)}
+  .leadcard.s-realizada::before{background:var(--amber)}
+  .leadcard.s-ganado::before{background:var(--green)}
+  .leadcard.s-nocompra::before{background:var(--red)}
+  .leadcard.s-noshow::before{background:var(--red)}
+  .leadcard.s-reagendado::before{background:var(--faint)}
+  .leadcard .lct{display:flex;align-items:center;gap:9px}
+  .leadcard .lnm{font-weight:660;font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .leadcard .lmeta{font-size:11.5px;color:var(--muted);margin-top:8px;display:flex;flex-direction:column;gap:4px}
+  .leadcard .lmeta .lr{display:flex;align-items:center;gap:7px}
+  .leadcard .lmeta .lr .ki{width:14px;text-align:center;opacity:.8;flex-shrink:0}
+  .leadcard .lpain{font-size:11.5px;color:var(--ink-2);margin-top:9px;background:var(--bg-2);border:1px solid var(--line);border-radius:9px;padding:7px 9px;line-height:1.4}
+  .leadcard .lpain b{color:#A7E8CC;font-weight:600}
+  .leadcard .lchecks{display:flex;gap:6px;margin-top:11px;flex-wrap:wrap}
+  .chk{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:650;padding:4px 8px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface-3);color:var(--muted);cursor:pointer;transition:all .12s}
+  .chk:hover{border-color:var(--line-2);color:var(--ink)}
+  .chk.on{background:var(--green-bg);border-color:var(--green-line);color:var(--green)}
+  .chk.on.red{background:var(--red-bg);border-color:var(--red-line);color:var(--red)}
+  .chk .cb{width:13px;height:13px;border-radius:4px;border:1.5px solid currentColor;display:inline-flex;align-items:center;justify-content:center;font-size:9px}
+  .chk.on .cb{background:currentColor}
+  .chk.on .cb::after{content:"✓";color:var(--surface);font-weight:900}
+  .chk.on.red .cb::after{content:"✕";color:var(--surface)}
+  .leadcard .lcash{margin-top:11px;border-top:1px dashed var(--line-2);padding-top:10px;font-size:11.5px}
+  .leadcard .lcash .crow{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px}
+  .leadcard .lcash .crow .cv{font-weight:700;font-variant-numeric:tabular-nums}
+  .leadcard .lcash .crow .cv.green{color:var(--green)}
+  .leadcard .lcash .crow .cv.amber{color:var(--amber)}
+  .leadcard .lcash .ctrack{height:6px;border-radius:4px;background:var(--surface-3);overflow:hidden;display:flex;margin-top:5px}
+  .leadcard .lcash .ctrack i.done{background:linear-gradient(90deg,#43D6A0,#22D3EE)}
+  .leadcard .lcash .ctrack i.pend{background:repeating-linear-gradient(45deg,rgba(240,180,90,.4),rgba(240,180,90,.4) 4px,rgba(240,180,90,.16) 4px,rgba(240,180,90,.16) 8px)}
+  .leadcard .lactions{display:flex;gap:7px;margin-top:12px;flex-wrap:wrap}
+  .leadcard .lactions .btn{flex:1;justify-content:center;min-width:0}
+
+  /* ===== ZONAS TEMPORALES ===== */
+  .zone{margin-bottom:26px}
+  .zone-h{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .zone-h .zi{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px}
+  .zone-h.future .zi{background:var(--blue-bg)}
+  .zone-h.past .zi{background:var(--amber-bg)}
+  .zone-h .zt{font-size:16px;font-weight:680}
+  .zone-h .zs{font-size:12px;color:var(--muted);margin-top:1px}
+  .zone-h .zc{margin-left:auto;font-size:11px;font-weight:700;padding:4px 11px;border-radius:9px;background:var(--surface-3);color:var(--ink-2)}
+  .zone-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+
+  /* ===== DRAWER ===== */
+  .backdrop{position:fixed;inset:0;background:rgba(4,6,10,.62);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .15s;z-index:40}
+  .backdrop.open{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;height:100vh;width:min(580px,96vw);background:linear-gradient(180deg,rgba(23,27,38,.98),rgba(14,17,22,.99));backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-left:1px solid var(--line-2);box-shadow:var(--shadow-lg);transform:translateX(100%);transition:transform .16s cubic-bezier(.2,.7,.2,1);z-index:41;display:flex;flex-direction:column}
+  .drawer.open{transform:translateX(0)}
+  .dh{padding:22px 24px 18px;border-bottom:1px solid var(--line);position:relative;flex-shrink:0}
+  .dh .x{position:absolute;top:18px;right:20px;width:32px;height:32px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--ink-2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;font-size:15px}
+  .dh .x:hover{background:var(--hover);color:#fff}
+  .dh .dnm{display:flex;align-items:center;gap:11px;padding-right:42px}
+  .dh h2{margin:0;font-size:21px;font-weight:680;letter-spacing:-.01em}
+  .dh .dm{color:var(--muted);font-size:12.5px;margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .dbody{padding:20px 24px 60px;overflow-y:auto;flex:1}
+  .dsec{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:26px 0 12px;display:flex;align-items:center;gap:8px}
+  .dsec:first-child{margin-top:2px}
+  .dsec .si{font-size:13px}
+
+  .kvgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .kv{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:11px 13px}
+  .kv.full{grid-column:1/-1}
+  .kv .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .kv .v{font-size:13.5px;font-weight:600;margin-top:5px;word-break:break-word}
+  .kv .v.copy{cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  .kv .v.copy:hover{color:#A7E8CC}
+  .kv .v .cpi{font-size:11px;opacity:.6}
+  .kv .v.green{color:var(--green)} .kv .v.amber{color:var(--amber)} .kv .v.red{color:var(--red)}
+
+  .qabox{background:var(--surface);border:1px solid var(--line);border-radius:13px;overflow:hidden}
+  .qa{padding:12px 15px;border-bottom:1px solid var(--line)}
+  .qa:last-child{border-bottom:none}
+  .qa .q{font-size:11px;color:var(--muted);font-weight:600}
+  .qa .a{font-size:13px;color:var(--ink);margin-top:4px;line-height:1.45}
+  .qa .a.hl{color:#A7E8CC;font-weight:600}
+
+  .fathom{background:linear-gradient(180deg,rgba(52,211,153,.1),rgba(52,211,153,.03));border:1px solid var(--brand-line);border-radius:13px;padding:15px 17px}
+  .fathom .fh{font-weight:700;color:#A7E8CC;display:flex;align-items:center;gap:8px;font-size:12.5px;margin-bottom:11px}
+  .fathom ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:7px}
+  .fathom li{font-size:13px;line-height:1.5;color:var(--ink)}
+  .fathom li b{color:#fff}
+
+  .transc{background:var(--bg-2);border:1px solid var(--line);border-radius:13px;max-height:0;overflow:hidden;transition:max-height .25s ease}
+  .transc.open{max-height:1400px}
+  .transc-inner{padding:6px 16px 14px}
+  .tline{display:flex;gap:11px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .tline:last-child{border-bottom:none}
+  .tline .who{font-weight:700;font-size:11px;width:62px;flex-shrink:0;padding-top:2px}
+  .tline .who.cl{color:#A7E8CC} .tline .who.le{color:var(--blue)}
+  .tline .txt{flex:1;font-size:12.5px;color:var(--ink-2);line-height:1.5}
+  .transc-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;font-weight:650;color:var(--ink-2);padding:11px 16px}
+  .transc-toggle:hover{color:#fff}
+  .transc-toggle .ch{margin-left:auto;transition:transform .2s}
+  .transc-toggle.open .ch{transform:rotate(180deg)}
+
+  .notes-ta{width:100%;min-height:96px;background:var(--surface);border:1px solid var(--line-2);border-radius:12px;padding:13px 15px;color:var(--ink);font-family:inherit;font-size:13px;line-height:1.55;resize:vertical}
+  .notes-ta:focus{outline:none;border-color:var(--brand-line);box-shadow:0 0 0 3px var(--brand-soft)}
+  .notes-bar{display:flex;align-items:center;gap:10px;margin-top:9px}
+  .notes-saved{font-size:11.5px;color:var(--green);font-weight:600;opacity:0;transition:opacity .2s}
+  .notes-saved.show{opacity:1}
+
+  .tl{position:relative;padding-left:2px;margin-top:4px}
+  .tlstep{display:flex;gap:13px;padding-bottom:15px;position:relative}
+  .tlstep:not(:last-child)::before{content:"";position:absolute;left:11px;top:25px;bottom:-2px;width:2px;background:var(--line-2)}
+  .tlstep .mk{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;border:2px solid var(--line-2);color:var(--muted);background:var(--surface);z-index:1}
+  .tlstep.done .mk{background:var(--green);border-color:var(--green);color:#04130d}
+  .tlstep.now .mk{background:var(--brand-2);border-color:var(--brand-2);color:#04130d;box-shadow:0 0 0 4px var(--brand-soft)}
+  .tlstep.pend .mk{opacity:.6}
+  .tlstep .ti{flex:1;min-width:0;padding-top:2px}
+  .tlstep .ti .nm{font-weight:600;font-size:13px}
+  .tlstep.pend .ti .nm{color:var(--muted)}
+  .tlstep .ti .dt{font-size:11.5px;color:var(--muted);margin-top:2px}
+
+  /* registro de pago */
+  .payfmt{display:flex;flex-direction:column;gap:10px}
+  .fmtgroup{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .fmtgroup-h{background:var(--surface);padding:9px 13px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+  .fmtopt{display:flex;align-items:center;gap:11px;padding:11px 13px;cursor:pointer;border-bottom:1px solid var(--line);transition:background .1s}
+  .fmtopt:hover{background:var(--hover)}
+  .fmtopt.sel{background:var(--brand-soft)}
+  .fmtopt .ra{width:17px;height:17px;border-radius:50%;border:2px solid var(--line-2);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  .fmtopt.sel .ra{border-color:var(--brand)}
+  .fmtopt.sel .ra::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--brand)}
+  .fmtopt .fx{flex:1;min-width:0}
+  .fmtopt .ft{font-size:13px;font-weight:600}
+  .fmtopt .fd{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .fmtopt .fp{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;flex-shrink:0;text-align:right}
+  .fmtopt .fp.green{color:var(--green)}
+  .fmtlink{display:flex;align-items:center;gap:9px;padding:9px 13px;background:var(--bg-2);border-top:1px dashed var(--line-2)}
+  .fmtlink .flk{font-size:10.5px;color:var(--faint);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:"SF Mono",ui-monospace,Menlo,monospace}
+  .fmtlink .copylink{flex-shrink:0;font-size:11px;font-weight:650;padding:5px 10px;border-radius:8px;border:1px solid var(--brand-line);background:var(--brand-soft);color:#A7E8CC;cursor:pointer;transition:all .12s}
+  .fmtlink .copylink:hover{background:rgba(52,211,153,.22)}
+  .fmtlink .copylink.tbc{border-color:var(--amber-line);background:var(--amber-bg);color:var(--amber);cursor:default;text-transform:none;letter-spacing:0}
+
+  .calendar-cobros{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .cuota{display:flex;align-items:center;gap:12px;padding:12px 15px;border-bottom:1px solid var(--line)}
+  .cuota:last-child{border-bottom:none}
+  .cuota .cnum{width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:var(--surface-3);color:var(--muted)}
+  .cuota.cobrada .cnum{background:var(--green);color:#04130d}
+  .cuota .cx{flex:1;min-width:0}
+  .cuota .cdt{font-size:13px;font-weight:600}
+  .cuota .cwhen{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .cuota .camt{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;flex-shrink:0}
+  .cuota.cobrada .camt{color:var(--green)}
+  .cuota.pend .camt{color:var(--amber)}
+  .paysummary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;margin-top:14px}
+  .paysum{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px}
+  .paysum .pl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .paysum .pv{font-size:19px;font-weight:760;font-variant-numeric:tabular-nums;margin-top:6px}
+  .paysum .pv.green{color:var(--green)} .paysum .pv.amber{color:var(--amber)}
+
+  .commission{margin-top:14px;background:linear-gradient(135deg,rgba(52,211,153,.1),rgba(34,211,238,.04));border:1px solid var(--brand-line);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:13px;flex-wrap:wrap}
+  .commission .ci{font-size:22px}
+  .commission .cx .ct{font-size:12px;color:var(--ink-2)}
+  .commission .cx .cv{font-size:20px;font-weight:760;color:#A7E8CC;font-variant-numeric:tabular-nums;margin-top:2px}
+  .commission .cnote{margin-left:auto;text-align:right;font-size:11px;color:var(--muted);line-height:1.5}
+
+  .dactions{display:flex;gap:9px;flex-wrap:wrap}
+  .dactions .btn{flex:1;justify-content:center;min-width:130px}
+
+  /* ===== GUÍA ===== */
+  .guide{max-width:760px}
+  .guide-step{display:flex;gap:16px;padding:18px 0;border-bottom:1px solid var(--line)}
+  .guide-step:last-child{border-bottom:none}
+  .guide-step .gn{width:38px;height:38px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:760;background:var(--brand-soft);color:#A7E8CC;border:1px solid var(--brand-line)}
+  .guide-step .gx .gt{font-weight:680;font-size:15px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .guide-step .gx .gd{font-size:13px;color:var(--ink-2);margin-top:6px;line-height:1.6}
+  .guide-step .gx .gd b{color:#fff}
+  .guide-flow{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin:6px 0 30px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .gfstep{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:650;color:var(--ink-2)}
+  .gfstep .gfd{width:11px;height:11px;border-radius:50%}
+  .gfarrow{color:var(--faint);margin:0 11px;font-size:14px}
+  .guide-callout{background:linear-gradient(180deg,rgba(52,211,153,.1),rgba(52,211,153,.03));border:1px solid var(--brand-line);border-radius:13px;padding:16px 18px;font-size:13.5px;line-height:1.6;margin-bottom:26px}
+  .guide-callout b{color:#fff}
+  .guide-callout .gci{font-size:18px;margin-right:8px}
+
+  .modal-bd{position:fixed;inset:0;background:rgba(4,6,10,.7);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);opacity:0;pointer-events:none;transition:opacity .15s;z-index:50;display:flex;align-items:center;justify-content:center;padding:30px}
+  .modal-bd.open{opacity:1;pointer-events:auto}
+  .modal{background:linear-gradient(180deg,var(--surface-2),var(--bg-2));border:1px solid var(--line-2);border-radius:18px;width:min(680px,96vw);max-height:88vh;overflow:hidden;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;transform:translateY(12px) scale(.98);transition:transform .16s}
+  .modal-bd.open .modal{transform:none}
+  .modal-h{padding:20px 24px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:11px}
+  .modal-h h2{margin:0;font-size:18px;font-weight:700}
+  .modal-h .x{margin-left:auto;width:30px;height:30px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-size:15px}
+  .modal-b{padding:8px 24px 26px;overflow-y:auto}
+
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface-2);border:1px solid var(--brand-line);color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:all .2s;z-index:60;display:flex;align-items:center;gap:9px}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast .ti{color:var(--brand)}
+
+  /* ===================== VENTAS & KPIs (portado de Marketing & Ventas) ===================== */
+  .perbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:6px 0 22px}
+  .datenav{display:inline-flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--line-2);border-radius:11px;padding:3px}
+  .datenav button{font-family:inherit;width:30px;height:30px;border:none;background:transparent;color:var(--ink-2);cursor:pointer;border-radius:8px;font-size:15px;transition:all .12s}
+  .datenav button:hover:not(:disabled){background:var(--hover);color:#fff}
+  .datenav button:disabled{opacity:.3;cursor:not-allowed}
+  .datenav .dlabel{min-width:178px;text-align:center;font-size:12.5px;font-weight:650;padding:0 8px}
+  .datenav .dlabel small{display:block;font-weight:500;color:var(--muted);font-size:10.5px;margin-top:1px}
+
+  .mk-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:12px}
+  .mk-kpi{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 18px}
+  .mk-kpi .l{color:var(--muted);font-size:12px}
+  .mk-kpi .sub{font-size:11.5px;margin-top:9px;font-weight:600}
+  .mk-kpi .sub.verde{color:var(--green)} .mk-kpi .sub.amarillo{color:var(--amber)} .mk-kpi .sub.rojo{color:var(--red)} .mk-kpi .sub.muted{color:var(--muted)}
+  .ol-row{display:flex;align-items:center;gap:11px}
+  .ol-row .olbar{flex:1;height:9px;border-radius:6px;background:var(--surface-3);overflow:hidden;position:relative}
+  .ol-row .olbar > i{display:block;height:100%;border-radius:6px;transition:width .9s cubic-bezier(.2,.7,.2,1)}
+  .ol-row .olbar > i.verde{background:linear-gradient(90deg,#43D6A0,#22D3EE)}
+  .ol-row .olbar > i.amarillo{background:linear-gradient(90deg,#F0B45A,#E879F9)}
+  .ol-row .olbar > i.rojo{background:linear-gradient(90deg,#F4707E,#F0B45A)}
+  .ten-pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid transparent}
+  .ten-pill.verde{background:var(--green-bg);color:var(--green);border-color:var(--green-line)}
+  .ten-pill.amarillo{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-line)}
+  .ten-pill.rojo{background:var(--red-bg);color:var(--red);border-color:var(--red-line)}
+  .note{color:var(--muted);font-size:12px;margin:0 0 14px;line-height:1.55}
+  .note b{color:var(--ink)}
+
+  .sparkbars{display:flex;align-items:flex-end;gap:10px;height:120px;padding:10px 4px 0}
+  .sparkbars .colb{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;cursor:pointer}
+  .sparkbars .colb .bar{width:100%;max-width:42px;border-radius:7px 7px 0 0;min-height:3px;transition:height .8s cubic-bezier(.2,.7,.2,1);background:linear-gradient(180deg,#43D6A0,#2aa37a)}
+  .sparkbars .colb .bar.now{box-shadow:0 0 0 2px var(--brand-line)}
+  .sparkbars .colb .vv{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+  .sparkbars .colb .ll{font-size:10px;color:var(--faint);text-align:center}
+
+  .goalrow2{display:flex;align-items:center;gap:16px;padding:12px 0}
+  .goalrow2:not(:last-child){border-bottom:1px solid var(--line)}
+  .goalrow2 .gl{width:230px;flex-shrink:0;font-size:13px}
+  .goalrow2 .gbar{flex:1;height:11px;border-radius:6px;background:var(--surface-3);overflow:hidden;position:relative}
+  .goalrow2 .gbar > i{display:block;height:100%;border-radius:6px;transition:width .9s cubic-bezier(.2,.7,.2,1)}
+  .goalrow2 .gbar > i.verde{background:linear-gradient(90deg,#43D6A0,#22D3EE)}
+  .goalrow2 .gbar > i.amarillo{background:linear-gradient(90deg,#F0B45A,#E879F9)}
+  .goalrow2 .gbar > i.rojo{background:linear-gradient(90deg,#F4707E,#F0B45A)}
+  .goalrow2 .gv{width:60px;flex-shrink:0;text-align:right;font-size:12.5px;font-variant-numeric:tabular-nums}
+  .goalrow2 .gv b{font-weight:700}
+
+  .tfunnel{display:flex;flex-direction:column;gap:10px}
+  .tstage{display:grid;grid-template-columns:170px 1fr;gap:14px;align-items:center}
+  .tstage .tsl{font-size:13px;font-weight:600}
+  .tstage .tsl small{display:block;color:var(--muted);font-size:11px;font-weight:500;margin-top:2px}
+  .tstage .tsbarwrap{display:flex;align-items:center;gap:12px}
+  .tstage .tsbar{flex:1;height:30px;border-radius:8px;background:var(--surface-3);overflow:hidden;position:relative}
+  .tstage .tsbar > i{display:flex;align-items:center;height:100%;border-radius:8px;padding-left:11px;font-size:12.5px;font-weight:700;color:#0B0E14;transition:width .9s cubic-bezier(.2,.7,.2,1);white-space:nowrap;min-width:42px}
+  .tstage .tsbar > i.verde{background:linear-gradient(90deg,#43D6A0,#22D3EE)}
+  .tstage .tsbar > i.amarillo{background:linear-gradient(90deg,#F0B45A,#E879F9)}
+  .tstage .tsbar > i.rojo{background:linear-gradient(90deg,#F4707E,#F0B45A)}
+  .conv{display:flex;flex-direction:column;align-items:flex-end;min-width:132px}
+  .conv .cv{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+  .conv .ct{font-size:11px;font-weight:650;display:inline-flex;align-items:center;gap:4px;margin-top:2px}
+  .conv .ct.up{color:var(--green)} .conv .ct.down{color:var(--red)} .conv .ct.flat{color:var(--muted)}
+  .neckdiag{margin-top:18px;border-radius:13px;padding:15px 17px;border:1px solid;font-size:13px;line-height:1.55}
+  .neckdiag.rojo{background:var(--red-bg);border-color:var(--red-line)}
+  .neckdiag.amarillo{background:var(--amber-bg);border-color:var(--amber-line)}
+  .neckdiag.verde{background:var(--green-bg);border-color:var(--green-line)}
+  .neckdiag .ndh{font-weight:700;display:flex;align-items:center;gap:8px}
+  .neckdiag.rojo .ndh{color:var(--red)} .neckdiag.amarillo .ndh{color:var(--amber)} .neckdiag.verde .ndh{color:var(--green)}
+  .neckdiag .ndm{color:var(--ink);margin-top:7px}
+
+  .callsplit{display:grid;grid-template-columns:280px 1fr;gap:16px}
+  .calllist{display:flex;flex-direction:column;gap:8px;max-height:560px;overflow-y:auto;padding-right:4px}
+  .callitem{text-align:left;font-family:inherit;width:100%;background:var(--bg-2);border:1px solid var(--line);border-radius:11px;padding:11px 12px;cursor:pointer;transition:all .12s;position:relative;overflow:hidden}
+  .callitem::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px}
+  .callitem.ganada::before{background:var(--green)} .callitem.perdida::before{background:var(--red)} .callitem.seguimiento::before{background:var(--amber)} .callitem.noshow::before{background:var(--red)}
+  .callitem:hover{background:var(--surface-2);border-color:var(--line-2)}
+  .callitem.sel{background:var(--brand-soft);border-color:var(--brand-line)}
+  .callitem .cin{font-weight:650;font-size:13px}
+  .callitem .cisub{font-size:11px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .callpanel{background:var(--bg-2);border:1px solid var(--line);border-radius:13px;padding:18px 20px}
+  .res-pill{font-size:11px;font-weight:700;padding:3px 10px;border-radius:8px}
+  .res-pill.ganada{background:var(--green-bg);color:var(--green)} .res-pill.perdida{background:var(--red-bg);color:var(--red)} .res-pill.seguimiento{background:var(--amber-bg);color:var(--amber)} .res-pill.noshow{background:var(--red-bg);color:var(--red)}
+  .keymoment{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 13px;font-size:12.5px;color:var(--ink-2);line-height:1.5;border-left:3px solid var(--brand)}
+  .callout{background:linear-gradient(180deg,rgba(52,211,153,.1),rgba(52,211,153,.03));border:1px solid var(--brand-line);border-radius:12px;padding:14px 16px;color:var(--ink);font-size:13.5px;line-height:1.6}
+  .callout b{color:#fff}
+  .li{display:flex;gap:9px;padding:7px 0;font-size:13.5px;align-items:flex-start;color:var(--ink-2)}
+  .li .bu{color:var(--brand);font-weight:800}
+  .savedhint{font-size:11.5px;color:var(--green);font-weight:600;opacity:0;transition:opacity .2s}
+  .savedhint.show{opacity:1}
+
+  @media (max-width:1080px){
+    .bigcards{grid-template-columns:repeat(2,1fr)}
+    .cashgrid{grid-template-columns:1fr 1fr}
+    .twocol{grid-template-columns:1fr}
+    .mk-kpis{grid-template-columns:repeat(2,1fr)}
+    .callsplit{grid-template-columns:1fr}
+    .vs-wrap{grid-template-columns:1fr;gap:12px}
+    .vs-mid{flex-direction:row}
+  }
+  @media (max-width:760px){
+    .sidebar{display:none}
+    .content{padding:22px 18px 80px}
+    .topbar{padding:12px 18px;flex-wrap:wrap}
+    .tstage{grid-template-columns:110px 1fr}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="mark">🏋️</div>
+      <div class="ttl">Daviking<small>CRM DE CIERRE · VENTAS</small></div>
+    </div>
+    <nav class="nav" id="nav">
+      <a data-view="overview" class="active"><span class="ico">🏠</span> Mi panel <span class="count" id="nc-hoy">0</span></a>
+      <a data-view="pipeline"><span class="ico">🗂️</span> Pipeline <span class="count" id="nc-pipe">0</span></a>
+      <a data-view="agenda"><span class="ico">📅</span> Agenda <span class="count amber" id="nc-agenda">0</span></a>
+      <a data-view="ventas"><span class="ico">📈</span> Ventas &amp; KPIs</a>
+      <a data-view="guia"><span class="ico">📘</span> ¿Cómo uso esto?</a>
+    </nav>
+    <div class="demo-badge">
+      <b>MAQUETA · datos de prueba</b><br>
+      Diseño a medida para Daviking. Sin conexión real a GHL, Calendly ni Fathom. Las acciones se guardan solo en este navegador.
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="tt" id="page-title">Mi panel<small id="page-sub">Resumen de cierre</small></div>
+      <div class="topbar-right">
+        <div class="closer-switch">
+          <span class="lab">Vista</span>
+          <div class="seg2" id="closer-seg">
+            <button data-closer="general" class="on"><span class="avatar sm general">EQ</span> General</button>
+            <button data-closer="pascu"><span class="avatar sm pascu">PV</span> Pascu</button>
+            <button data-closer="alvaro"><span class="avatar sm alvaro">ÁL</span> Álvaro</button>
+          </div>
+        </div>
+        <button class="help-btn" onclick="openGuide()">📘 Ayuda</button>
+      </div>
+    </div>
+    <div class="maq-banner">
+      <span class="bi">⚠️</span>
+      <div><b>Maqueta de demostración.</b> Todos los datos (leads, llamadas, pagos, KPIs) son inventados. Los enlaces de pago son reales de Hotmart; el plan de <b>Solo nutrición</b> tiene enlaces <span class="tbc">por confirmar</span>.</div>
+    </div>
+
+    <div class="content">
+
+      <!-- ============ OVERVIEW ============ -->
+      <section class="view active" id="view-overview">
+        <div class="h-row">
+          <div>
+            <p class="h-eyebrow" id="ov-eyebrow">Closer · Pascu Vargas</p>
+            <h1 class="h-big" id="ov-title">Hola, Pascu 👋</h1>
+            <p class="h-sub">Periodo: <b>1 – 31 de mayo 2026</b> · Hoy es viernes 29 de mayo</p>
+          </div>
+          <button class="btn primary" onclick="go('ventas')">Ver Ventas &amp; KPIs →</button>
+        </div>
+        <div class="bigcards" id="ov-cards"></div>
+        <div class="cashcard">
+          <div class="ch">
+            <span style="font-size:20px">💸</span>
+            <div>
+              <h2>Cash collected · base de tu comisión</h2>
+              <div class="sub">Lo que ya entró en caja (cobrado) frente a lo que entrará con las cuotas pendientes (proyectado).</div>
+            </div>
+          </div>
+          <div class="cashgrid" id="cash-grid"></div>
+        </div>
+        <div id="ov-vs"></div>
+        <div class="twocol">
+          <div class="card">
+            <h3>☀️ Hoy tienes que hacer <span class="cnt amber" id="cnt-hoy">0</span></h3>
+            <div id="hoy-list"></div>
+          </div>
+          <div class="card">
+            <h3>⏳ Pendiente de completar <span class="cnt red" id="cnt-pend">0</span></h3>
+            <div id="pend-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ PIPELINE ============ -->
+      <section class="view" id="view-pipeline">
+        <p class="h-eyebrow" id="pipe-eyebrow">Pipeline · Pascu Vargas</p>
+        <h1 class="h-big">Pipeline de leads 🗂️</h1>
+        <p class="h-sub">Mueve cada lead por su estado con un clic. Solo ves <b id="pipe-who">tus</b> leads.</p>
+        <div class="pipe-toolbar">
+          <div class="seg" id="pipe-filter">
+            <button data-f="todos" class="on">Todos</button>
+            <button data-f="activos">Activos</button>
+            <button data-f="cerrados">Cerrados</button>
+          </div>
+          <div style="margin-left:auto;font-size:12px;color:var(--muted)">👉 Toca una tarjeta para ver la info completa de la llamada.</div>
+        </div>
+        <div class="kanban" id="kanban"></div>
+      </section>
+
+      <!-- ============ AGENDA ============ -->
+      <section class="view" id="view-agenda">
+        <p class="h-eyebrow" id="ag-eyebrow">Agenda · Pascu Vargas</p>
+        <h1 class="h-big">Agenda de llamadas 📅</h1>
+        <p class="h-sub">Separamos lo que viene (validar / confirmar) de lo que ya pasó (registrar resultado). Hoy: <b>viernes 29 de mayo 2026</b>.</p>
+        <div class="zone">
+          <div class="zone-h future">
+            <div class="zi">🔜</div>
+            <div><div class="zt">Próximas agendas</div><div class="zs">Llamadas futuras: valida que cualifican y confirma que asistirán.</div></div>
+            <span class="zc" id="future-cnt">0</span>
+          </div>
+          <div class="zone-grid" id="future-grid"></div>
+        </div>
+        <div class="zone">
+          <div class="zone-h past">
+            <div class="zi">📝</div>
+            <div><div class="zt">Pasadas · pendientes de registrar resultado</div><div class="zs">Llamadas ya realizadas que esperan tu desenlace: pago, no compra, no-show o reagendar.</div></div>
+            <span class="zc" id="past-cnt">0</span>
+          </div>
+          <div class="zone-grid" id="past-grid"></div>
+        </div>
+      </section>
+
+      <!-- ============ VENTAS & KPIs ============ -->
+      <section class="view" id="view-ventas">
+        <p class="h-eyebrow" id="mk-eyebrow">Ventas &amp; KPIs · Pascu Vargas</p>
+        <h1 class="h-big">Analítica de ventas 📈<small>Objetivo vs alcanzado por fecha, cuello de botella por tendencia y revisión de llamadas. Todo filtrado por el closer activo.</small></h1>
+        <div id="mk-body"></div>
+      </section>
+
+      <!-- ============ GUÍA ============ -->
+      <section class="view" id="view-guia">
+        <p class="h-eyebrow">Onboarding</p>
+        <h1 class="h-big">¿Cómo uso esto? 📘</h1>
+        <p class="h-sub">Hecho para closers que odian los CRM complicados. Mínima fricción, todo a un clic.</p>
+        <div class="guide" id="guide-body"></div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<div class="backdrop" id="backdrop" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="dh">
+    <button class="x" onclick="closeDrawer()">✕</button>
+    <div class="dnm" id="d-name"></div>
+    <div class="dm" id="d-meta"></div>
+  </div>
+  <div class="dbody" id="d-body"></div>
+</div>
+
+<div class="modal-bd" id="guide-modal" onclick="if(event.target===this)closeGuide()">
+  <div class="modal">
+    <div class="modal-h">
+      <span style="font-size:20px">📘</span>
+      <h2>Workflow del closer en 5 pasos</h2>
+      <button class="x" onclick="closeGuide()">✕</button>
+    </div>
+    <div class="modal-b" id="guide-modal-body"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="ti">✓</span><span id="toast-txt"></span></div>
+
+<script>
+"use strict";
+
+/* ===================== FECHAS FIJAS (sin Date dinámico) ===================== */
+const HOY = "2026-05-29"; // viernes 29 mayo 2026 (referencia fija de la maqueta)
+const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+const MESES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+function ymd(s){const [y,m,d]=s.split("-").map(Number);return {y,m,d};}
+function fmtFecha(s){const {y,m,d}=ymd(s);return d+" "+MESES[m-1]+" "+y;}
+function fmtCorta(s){const {m,d}=ymd(s);return d+" "+MESES[m-1];}
+function diaSemana(s){
+  const {y,m,d}=ymd(s);
+  let mm=m,yy=y; if(mm<3){mm+=12;yy--;}
+  const k=yy%100,j=Math.floor(yy/100);
+  let h=(d+Math.floor((13*(mm+1))/5)+k+Math.floor(k/4)+Math.floor(j/4)+5*j)%7;
+  const map=[6,0,1,2,3,4,5];
+  return DIAS[map[h]];
+}
+function diffDias(a,b){
+  const da=ymd(a), db=ymd(b);
+  const toN=(o)=> (o.y*372)+(o.m*31)+o.d;
+  return toN(db)-toN(da);
+}
+function esFuturo(s){return s>HOY;}
+function esPasado(s){return s<HOY;}
+function etiquetaCuando(s,prefix){
+  if(s===HOY) return prefix+"hoy";
+  if(s>HOY){ return prefix+"el "+diaSemana(s).slice(0,3)+" "+fmtCorta(s);}
+  return prefix+"el "+fmtCorta(s);
+}
+
+/* ===================== FORMATOS DE PAGO DAVIKING (HOTMART, importes reales) =====================
+   Cada formato: calendario de cuotas (importe + offset en días desde el cierre)
+   + enlace de pago real de Hotmart. La comisión se devenga sobre lo COBRADO. */
+const HOTMART = {
+  anual1:   "https://pay.hotmart.com/K106080741B?checkoutMode=10&bid=1780394071042",
+  anualFr:  "https://pay.hotmart.com/K106080741B?off=c6u0j7a7&checkoutMode=10&bid=1780405093676",
+  sem1:     "https://pay.hotmart.com/K106080741B?off=vbi67j94&checkoutMode=10&bid=1780402732287",
+  semFr:    "https://pay.hotmart.com/K106080741B?off=oanu0sxs&checkoutMode=10&bid=1780405732269",
+};
+const FORMATOS = [
+  {grupo:"ANUAL", tbc:false, opts:[
+    {id:"anual-1",    t:"Anual · 1 pago",                 d:"1.800 € único hoy",                       total:1800, link:HOTMART.anual1, cuotas:[{amt:1800,off:0}]},
+    {id:"anual-2",    t:"Anual · fraccionado (2 pagos)",  d:"2×900 € · total 1.800 € (hoy + 30 días)", total:1800, link:HOTMART.anualFr, cuotas:[{amt:900,off:0},{amt:900,off:30}]},
+    {id:"anual-3",    t:"Anual · fraccionado (3 pagos)",  d:"3×600 € · total 1.800 € (hoy, 30 y 60 días)", total:1800, link:HOTMART.anualFr, cuotas:[{amt:600,off:0},{amt:600,off:30},{amt:600,off:60}]},
+  ]},
+  {grupo:"SEMESTRAL", tbc:false, opts:[
+    {id:"sem-1",      t:"Semestral · 1 pago",             d:"1.200 € único hoy",                       total:1200, link:HOTMART.sem1, cuotas:[{amt:1200,off:0}]},
+    {id:"sem-2",      t:"Semestral · fraccionado (2 pagos)", d:"2×600 € · total 1.200 € (hoy + 30 días)", total:1200, link:HOTMART.semFr, cuotas:[{amt:600,off:0},{amt:600,off:30}]},
+  ]},
+  {grupo:"SOLO NUTRICIÓN", tbc:true, opts:[
+    {id:"nut-1",      t:"Solo nutrición · 1 pago",        d:"1.500 € único hoy",                       total:1500, link:null, cuotas:[{amt:1500,off:0}]},
+    {id:"nut-2",      t:"Solo nutrición · fraccionado",   d:"750 € + 750 € (hoy + 30 días)",           total:1500, link:null, cuotas:[{amt:750,off:0},{amt:750,off:30}]},
+    {id:"nut-2-60",   t:"Solo nutrición · fraccionado (60 días)", d:"750 € + 750 € (hoy + 60 días)",   total:1500, link:null, cuotas:[{amt:750,off:0},{amt:750,off:60}]},
+  ]},
+  {grupo:"RESERVA", tbc:false, opts:[
+    {id:"res-100",    t:"Reserva · 100 €",                d:"Señal flexible (resto a acordar)",        total:100,  link:null, cuotas:[{amt:100,off:0}]},
+    {id:"res-200",    t:"Reserva · 200 €",                d:"Señal flexible (resto a acordar)",        total:200,  link:null, cuotas:[{amt:200,off:0}]},
+  ]},
+];
+function findFormato(id){
+  for(const g of FORMATOS){ for(const o of g.opts){ if(o.id===id) return {...o, grupo:g.grupo, tbc:g.tbc}; } }
+  return null;
+}
+const COMISION_PCT = 0.10; // 10% sobre el cash COBRADO (estimada, editable a futuro)
+
+function fechaConOffset(baseYmd, days){
+  let {y,m,d}=ymd(baseYmd);
+  d+=days;
+  const dim=()=>[31,(y%4===0&&(y%100!==0||y%400===0))?29:28,31,30,31,30,31,31,30,31,30,31][m-1];
+  while(d>dim()){ d-=dim(); m++; if(m>12){m=1;y++;} }
+  return y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+}
+function eur(n){ return Number(n).toLocaleString("es-ES")+" €"; }
+
+/* ===================== ESTADOS DEL PIPELINE ===================== */
+const ESTADOS = {
+  nuevo:      {t:"Nuevo / Agendado", color:"#5BAEF6", dot:"var(--blue)", grupo:"activo"},
+  validado:   {t:"Validado (cualifica)", color:"#A78BFA", dot:"#A78BFA", grupo:"activo"},
+  confirmado: {t:"Confirmado", color:"#34D399", dot:"var(--brand)", grupo:"activo"},
+  realizada:  {t:"Llamada realizada", color:"#F0B45A", dot:"var(--amber)", grupo:"activo"},
+  ganado:     {t:"Pago hecho · Ganado", color:"#43D6A0", dot:"var(--green)", grupo:"cerrado"},
+  nocompra:   {t:"No compra", color:"#F4707E", dot:"var(--red)", grupo:"cerrado"},
+  noshow:     {t:"No-show", color:"#F4707E", dot:"var(--red)", grupo:"cerrado"},
+  reagendado: {t:"Reagendado", color:"#7C8499", dot:"var(--faint)", grupo:"activo"},
+};
+const ORDEN_KANBAN = ["nuevo","validado","confirmado","realizada","ganado","nocompra","noshow","reagendado"];
+
+/* ===================== DATOS INVENTADOS · LEADS ===================== */
+const LEADS = [
+  {id:"l1", closer:"pascu", nombre:"Marcos Llorente", email:"marcos.llorente@gmail.com", tel:"+34 666 214 880",
+   estado:"nuevo", agendado:"2026-05-27", llamada:"2026-05-30", validada:false, confirmada:false, asistio:null,
+   objetivo:"Bajar 12 kg y recomponer", nivel:"Entrena 2x/sem, sin pauta", presupuesto:"Hasta 2.000 €", origen:"Instagram (reel sentadilla)",
+   dolor:"Lleva 3 años con efecto rebote. Pierde y recupera. Frustrado, quiere algo sostenible.",
+   form:[
+     {q:"¿Cuál es tu objetivo principal?", a:"Perder grasa (≈12 kg) sin perder músculo", hl:true},
+     {q:"¿Has trabajado antes con un coach?", a:"Sí, dos veces, pero recuperé el peso"},
+     {q:"¿Cuánto puedes invertir en tu transformación?", a:"Hasta 2.000 € si veo que funciona", hl:true},
+     {q:"¿Por qué AHORA?", a:"Boda de mi hermano en septiembre"},
+     {q:"Del 1 al 10, ¿cómo de comprometido estás?", a:"9"},
+   ]},
+  {id:"l2", closer:"pascu", nombre:"Lucía Fernández", email:"lucia.fdz@outlook.com", tel:"+34 622 109 334",
+   estado:"validado", agendado:"2026-05-26", llamada:"2026-05-31", validada:true, confirmada:false, asistio:null,
+   objetivo:"Definición + energía", nivel:"Entrena 4x/sem", presupuesto:"1.000–1.500 €", origen:"Recomendación de clienta",
+   dolor:"Estancada hace meses. Le falta estructura nutricional, come bien pero a ojo.",
+   form:[
+     {q:"¿Cuál es tu objetivo principal?", a:"Definir y tener más energía durante el día", hl:true},
+     {q:"¿Has trabajado antes con un coach?", a:"No, siempre por mi cuenta"},
+     {q:"¿Cuánto puedes invertir?", a:"Entre 1.000 y 1.500 €"},
+     {q:"¿Por qué AHORA?", a:"Llevo 6 meses estancada y me agobia"},
+     {q:"Del 1 al 10, ¿compromiso?", a:"8"},
+   ]},
+  {id:"l3", closer:"pascu", nombre:"David Sánchez", email:"dsanchez.fit@gmail.com", tel:"+34 611 778 220",
+   estado:"confirmado", agendado:"2026-05-25", llamada:"2026-05-29", validada:true, confirmada:true, asistio:null,
+   objetivo:"Ganar masa muscular", nivel:"Avanzado, 5x/sem", presupuesto:"Sin límite si convence", origen:"YouTube",
+   dolor:"Quiere subir de categoría en powerlifting. Nutrición desordenada en volumen.",
+   form:[
+     {q:"¿Cuál es tu objetivo principal?", a:"Ganar masa para competir en -90 kg", hl:true},
+     {q:"¿Has trabajado antes con un coach?", a:"Sí, contento pero quiero subir de nivel"},
+     {q:"¿Cuánto puedes invertir?", a:"Lo que haga falta si el plan es serio", hl:true},
+     {q:"¿Por qué AHORA?", a:"Campeonato regional en otoño"},
+     {q:"Del 1 al 10, ¿compromiso?", a:"10"},
+   ]},
+  {id:"l4", closer:"pascu", nombre:"Andrea Gómez", email:"andreagomez@gmail.com", tel:"+34 699 005 411",
+   estado:"realizada", agendado:"2026-05-22", llamada:"2026-05-28", validada:true, confirmada:true, asistio:true,
+   objetivo:"Recomposición postparto", nivel:"Vuelve tras 1 año parada", presupuesto:"≈1.500 €", origen:"Instagram",
+   dolor:"Postparto, sin tiempo, culpa por no entrenar. Necesita un plan realista con poco tiempo.",
+   form:[
+     {q:"¿Cuál es tu objetivo principal?", a:"Recuperar forma tras el embarazo", hl:true},
+     {q:"¿Has trabajado antes con un coach?", a:"No"},
+     {q:"¿Cuánto puedes invertir?", a:"Alrededor de 1.500 €"},
+     {q:"¿Por qué AHORA?", a:"Mi hija ya tiene 1 año, es mi momento"},
+     {q:"Del 1 al 10, ¿compromiso?", a:"9"},
+   ],
+   resultado:"pendiente",
+   callRes:"seguimiento", callDur:"26 min",
+   momentoClave:'[18:20] "Me encanta el enfoque, ¿puedo fraccionarlo? Lo confirmo hoy tras hablar con mi pareja."',
+   resumen:[
+     "Andrea busca recomposición postparto con <b>muy poco tiempo</b> (45 min, 3 días/sem).",
+     "Principal freno: <b>culpa y falta de constancia</b>, no el dinero.",
+     "Le encajó el enfoque de entrenos cortos en casa + nutrición flexible.",
+     "Objeción suave sobre si podrá seguirlo con la niña; resuelta con casos similares.",
+     "Mostró intención de compra clara; pidió <b>opciones de pago a plazos</b>.",
+     "Quedó en confirmar hoy mismo tras hablarlo con su pareja."
+   ],
+   transcripcion:[
+     {w:"Pascu", c:"Cuéntame Andrea, ¿qué te hizo agendar esta llamada?", cl:true},
+     {w:"Andrea", c:"Pues que mi hija ya tiene un año y no me reconozco en el espejo. Quiero volver a sentirme yo."},
+     {w:"Pascu", c:"Te entiendo perfectamente. ¿Cuánto tiempo real tienes al día para ti?", cl:true},
+     {w:"Andrea", c:"Sinceramente, 45 minutos como mucho, y no todos los días."},
+     {w:"Pascu", c:"Eso es más que suficiente con nuestro sistema. Trabajamos con sesiones cortas y nutrición flexible, nada de dietas imposibles.", cl:true},
+     {w:"Andrea", c:"¿Y si no puedo seguir el ritmo? Me ha pasado antes y me frustro."},
+     {w:"Pascu", c:"Por eso tienes seguimiento semanal y ajustamos a tu vida real. Tengo varias mamás en tu misma situación que están encantadas.", cl:true},
+     {w:"Andrea", c:"Me gusta. ¿Cómo serían los pagos? ¿Puedo fraccionarlo?"},
+     {w:"Pascu", c:"Sí, el anual lo puedes dividir en 2 o 3 pagos. Te paso el enlace. ¿Lo hablas con tu pareja y cerramos hoy?", cl:true},
+     {w:"Andrea", c:"Sí, esta tarde te confirmo casi seguro."},
+   ]},
+  {id:"l5", closer:"pascu", nombre:"Javier Ruiz", email:"javi.ruiz@gmail.com", tel:"+34 633 442 109",
+   estado:"realizada", agendado:"2026-05-20", llamada:"2026-05-27", validada:true, confirmada:true, asistio:true,
+   objetivo:"Perder barriga", nivel:"Sedentario", presupuesto:"Justo, mirando precio", origen:"TikTok",
+   dolor:"Trabaja 10h, come fuera todos los días. Muy poca disponibilidad y dudas de presupuesto.",
+   form:[
+     {q:"¿Cuál es tu objetivo principal?", a:"Perder barriga, salud general"},
+     {q:"¿Has trabajado antes con un coach?", a:"No"},
+     {q:"¿Cuánto puedes invertir?", a:"No mucho, depende del precio", hl:true},
+     {q:"¿Por qué AHORA?", a:"El médico me avisó del colesterol"},
+     {q:"Del 1 al 10, ¿compromiso?", a:"6"},
+   ],
+   resultado:"pendiente",
+   callRes:"seguimiento", callDur:"19 min",
+   momentoClave:'[12:05] "No mucho, depende de lo que sea la verdad" → objeción de precio recurrente.',
+   resumen:[
+     "Javier quiere salud general y perder abdomen; motivación <b>médica</b>, no estética.",
+     "Disponibilidad muy baja (jornadas de 10h) y <b>come fuera a diario</b>.",
+     "Objeción de precio recurrente: 'no mucho, depende'.",
+     "Compromiso autodeclarado bajo (6/10).",
+     "Encajaría mejor en <b>Solo nutrición</b> por su falta de tiempo para entrenar.",
+     "Pidió pensárselo unos días; riesgo de enfriarse."
+   ],
+   transcripcion:[
+     {w:"Pascu", c:"Javier, ¿qué te trae por aquí?", cl:true},
+     {w:"Javier", c:"El médico me dijo que tengo el colesterol alto y la barriga me molesta."},
+     {w:"Pascu", c:"¿Cuánto tiempo tienes para entrenar a la semana?", cl:true},
+     {w:"Javier", c:"Casi nada, curro diez horas y como fuera siempre."},
+     {w:"Pascu", c:"Entonces lo tuyo es atacar la nutrición primero. ¿Qué presupuesto manejas?", cl:true},
+     {w:"Javier", c:"Uf, no mucho, depende de lo que sea la verdad."},
+     {w:"Pascu", c:"Te entiendo, déjame mostrarte el retorno en salud. ¿Lo vemos?", cl:true},
+     {w:"Javier", c:"Vale pero me lo tengo que pensar unos días."},
+   ]},
+  {id:"l6", closer:"pascu", nombre:"Sara Montes", email:"sara.montes@icloud.com", tel:"+34 655 332 871",
+   estado:"ganado", agendado:"2026-05-12", llamada:"2026-05-19", validada:true, confirmada:true, asistio:true,
+   objetivo:"Plan integral fitness+nutri", nivel:"Intermedio", presupuesto:"Decidida a invertir", origen:"Recomendación",
+   dolor:"Cansada de planes genéricos. Quiere acompañamiento serio y a largo plazo.",
+   form:[
+     {q:"¿Cuál es tu objetivo principal?", a:"Transformación completa de 12 meses", hl:true},
+     {q:"¿Has trabajado antes con un coach?", a:"Sí, varios, ninguno serio"},
+     {q:"¿Cuánto puedes invertir?", a:"Quiero algo premium, no me importa pagar", hl:true},
+     {q:"¿Por qué AHORA?", a:"Cumplo 40 y quiero llegar en mi mejor forma"},
+     {q:"Del 1 al 10, ¿compromiso?", a:"10"},
+   ],
+   resultado:"ganado",
+   formatoPago:"anual-2", fechaCierre:"2026-05-19",
+   callRes:"ganada", callDur:"22 min",
+   momentoClave:'[15:30] "Me da igual el precio si funciona. Hazlo en dos pagos. Vamos."',
+   resumen:[
+     "Sara buscaba un <b>programa anual premium</b>, harta de planes genéricos.",
+     "Cero objeción de precio; el valor y el acompañamiento eran su prioridad.",
+     "Motivador potente: cumple 40 y quiere llegar en su mejor forma.",
+     "Eligió el plan <b>Anual fraccionado en 2 pagos</b> (2×900 €) para repartir el desembolso.",
+     "Cerró en la misma llamada; alta predisposición y confianza.",
+     "Cobrado 900 € hoy; segundo pago de 900 € programado a 30 días."
+   ],
+   transcripcion:[
+     {w:"Pascu", c:"Sara, por lo que vi en el formulario buscas algo serio a largo plazo.", cl:true},
+     {w:"Sara", c:"Exacto, estoy harta de pdfs genéricos. Quiero alguien encima de mí."},
+     {w:"Pascu", c:"Eso es justo lo que hacemos en el anual. Seguimiento real cada semana.", cl:true},
+     {w:"Sara", c:"Me da igual el precio si funciona. ¿Qué opciones de pago hay?"},
+     {w:"Pascu", c:"Puedes pagar los 1.800 € enteros o fraccionarlo en 2 o 3 pagos.", cl:true},
+     {w:"Sara", c:"Perfecto, hazlo en dos pagos de 900. Vamos."},
+   ]},
+  {id:"l7", closer:"pascu", nombre:"Pablo Herrera", email:"pablo.herrera@gmail.com", tel:"+34 677 901 552",
+   estado:"ganado", agendado:"2026-05-08", llamada:"2026-05-15", validada:true, confirmada:true, asistio:true,
+   objetivo:"Mejorar alimentación", nivel:"Entrena solo", presupuesto:"Medio", origen:"Instagram",
+   dolor:"Entrena bien pero come fatal. Solo quiere ordenar la nutrición.",
+   form:[
+     {q:"¿Cuál es tu objetivo principal?", a:"Ordenar la nutrición, entreno ya por mi cuenta", hl:true},
+     {q:"¿Has trabajado antes con un coach?", a:"De entreno sí, de nutrición no"},
+     {q:"¿Cuánto puedes invertir?", a:"Algo razonable, 1.500 € lo veo"},
+     {q:"¿Por qué AHORA?", a:"Quiero ver el músculo que tengo escondido"},
+     {q:"Del 1 al 10, ¿compromiso?", a:"9"},
+   ],
+   resultado:"ganado",
+   formatoPago:"nut-1", fechaCierre:"2026-05-15",
+   callRes:"ganada", callDur:"18 min",
+   momentoClave:'[10:10] "Me parece honesto. ¿Cuánto sería? 1.500 €, dale, pago ahora."',
+   resumen:[
+     "Pablo entrena solo y bien; su problema es <b>únicamente la nutrición</b>.",
+     "Encaje perfecto con el servicio de <b>Solo nutrición</b>.",
+     "Sin objeción de precio para el rango de 1.500 €.",
+     "Compromiso alto (9/10) y motivación estética clara.",
+     "Cerró pago único de 1.500 € en la misma llamada.",
+     "Cash cobrado completo, sin cuotas pendientes."
+   ],
+   transcripcion:[
+     {w:"Pascu", c:"Pablo, veo que el entreno lo llevas tú. ¿La nutrición es el cuello de botella?", cl:true},
+     {w:"Pablo", c:"Totalmente, entreno duro pero como fatal y no veo resultados."},
+     {w:"Pascu", c:"Entonces no necesitas el plan completo, solo nutrición. Te sale más a cuenta.", cl:true},
+     {w:"Pablo", c:"Me parece honesto. ¿Cuánto sería?"},
+     {w:"Pascu", c:"1.500 € el programa de nutrición. ¿Lo arrancamos?", cl:true},
+     {w:"Pablo", c:"Dale, pago ahora."},
+   ]},
+  {id:"l8", closer:"pascu", nombre:"Elena Vidal", email:"elena.vidal@gmail.com", tel:"+34 688 120 449",
+   estado:"noshow", agendado:"2026-05-21", llamada:"2026-05-26", validada:true, confirmada:false, asistio:false,
+   objetivo:"Perder peso", nivel:"Principiante", presupuesto:"?", origen:"Anuncio",
+   dolor:"Mostró interés pero nunca confirmó. No se presentó a la llamada.",
+   form:[
+     {q:"¿Cuál es tu objetivo principal?", a:"Perder peso para el verano"},
+     {q:"¿Has trabajado antes con un coach?", a:"No"},
+     {q:"¿Cuánto puedes invertir?", a:"(sin responder)"},
+     {q:"¿Por qué AHORA?", a:"Quiero verme bien en la playa"},
+     {q:"Del 1 al 10, ¿compromiso?", a:"5"},
+   ],
+   resultado:"noshow",
+   callRes:"noshow", callDur:"0 min",
+   momentoClave:"No se conectó. Sin confirmación previa pese a 2 recordatorios.",
+   resumen:[
+     "Elena <b>no asistió</b> a la llamada agendada.",
+     "Nunca llegó a confirmar la asistencia (check de confirmación en rojo).",
+     "Presupuesto sin responder y compromiso bajo (5/10): señal de baja cualificación.",
+     "Recomendable secuencia de reactivación antes de descartar."
+   ],
+   transcripcion:[]},
+  {id:"l9", closer:"pascu", nombre:"Carlos Pinto", email:"carlos.pinto@gmail.com", tel:"+34 644 778 003",
+   estado:"reagendado", agendado:"2026-05-23", llamada:"2026-06-02", validada:true, confirmada:false, asistio:null,
+   objetivo:"Recomposición", nivel:"Intermedio", presupuesto:"≈1.000 €", origen:"YouTube",
+   dolor:"Pidió mover la llamada por un viaje de trabajo. Sigue interesado.",
+   form:[
+     {q:"¿Cuál es tu objetivo principal?", a:"Recomposición corporal", hl:true},
+     {q:"¿Has trabajado antes con un coach?", a:"Una vez, hace años"},
+     {q:"¿Cuánto puedes invertir?", a:"Sobre 1.000 €"},
+     {q:"¿Por qué AHORA?", a:"Quiero coger hábitos buenos de una vez"},
+     {q:"Del 1 al 10, ¿compromiso?", a:"7"},
+   ]},
+
+  /* ---- LEADS DE ÁLVARO ---- */
+  {id:"a1", closer:"alvaro", nombre:"Nuria Castro", email:"nuria.castro@gmail.com", tel:"+34 622 991 003",
+   estado:"confirmado", agendado:"2026-05-26", llamada:"2026-05-29", validada:true, confirmada:true, asistio:null,
+   objetivo:"Bajar grasa", nivel:"Principiante", presupuesto:"1.000 €", origen:"Instagram",
+   dolor:"Quiere empezar bien guiada, le da miedo el gimnasio.",
+   form:[
+     {q:"¿Cuál es tu objetivo principal?", a:"Bajar grasa y coger confianza en el gym", hl:true},
+     {q:"¿Has trabajado antes con un coach?", a:"No"},
+     {q:"¿Cuánto puedes invertir?", a:"Sobre 1.000 €"},
+     {q:"¿Por qué AHORA?", a:"Año nuevo, vida nueva (con retraso)"},
+     {q:"Del 1 al 10, ¿compromiso?", a:"8"},
+   ]},
+  {id:"a2", closer:"alvaro", nombre:"Roberto Díaz", email:"roberto.diaz@gmail.com", tel:"+34 655 110 887",
+   estado:"realizada", agendado:"2026-05-22", llamada:"2026-05-28", validada:true, confirmada:true, asistio:true,
+   objetivo:"Ganar músculo", nivel:"Intermedio", presupuesto:"Alto", origen:"Recomendación",
+   dolor:"Quiere subir 8 kg de músculo limpio. Decidido.",
+   form:[
+     {q:"¿Cuál es tu objetivo principal?", a:"Ganar 8 kg de músculo limpio", hl:true},
+     {q:"¿Has trabajado antes con un coach?", a:"Sí, buena experiencia"},
+     {q:"¿Cuánto puedes invertir?", a:"Lo que valga el resultado", hl:true},
+     {q:"¿Por qué AHORA?", a:"Quiero el cuerpo de mi vida a los 30"},
+     {q:"Del 1 al 10, ¿compromiso?", a:"10"},
+   ],
+   resultado:"pendiente",
+   callRes:"seguimiento", callDur:"23 min",
+   momentoClave:'[16:40] "Me vale. Enséñame el plan de entrenos antes de pagar."',
+   resumen:[
+     "Roberto quiere ganar <b>8 kg de músculo limpio</b>, muy decidido.",
+     "Buena experiencia previa con coach; sabe lo que quiere.",
+     "Sin objeción de precio: 'lo que valga el resultado'.",
+     "Encaje claro con plan <b>Anual</b> de transformación.",
+     "Pidió cerrar pero quería ver el calendario de entrenos primero.",
+     "Alta probabilidad de cierre en seguimiento."
+   ],
+   transcripcion:[
+     {w:"Álvaro", c:"Roberto, tienes las ideas muy claras. ¿Qué buscas exactamente?", cl:true},
+     {w:"Roberto", c:"Ganar 8 kilos de músculo limpio este año, sin pasarme de grasa."},
+     {w:"Álvaro", c:"Eso es un trabajo de 12 meses bien planificado. El anual es para ti.", cl:true},
+     {w:"Roberto", c:"Me vale. Enséñame cómo sería el plan de entrenos antes de pagar."},
+   ]},
+  {id:"a3", closer:"alvaro", nombre:"Marta León", email:"marta.leon@gmail.com", tel:"+34 633 220 119",
+   estado:"ganado", agendado:"2026-05-10", llamada:"2026-05-17", validada:true, confirmada:true, asistio:true,
+   objetivo:"Definición boda", nivel:"Intermedio", presupuesto:"Medio-alto", origen:"Instagram",
+   dolor:"Se casa en 6 meses, quiere llegar definida. Muy motivada.",
+   form:[
+     {q:"¿Cuál es tu objetivo principal?", a:"Llegar definida a mi boda", hl:true},
+     {q:"¿Has trabajado antes con un coach?", a:"No"},
+     {q:"¿Cuánto puedes invertir?", a:"Es mi boda, invierto lo necesario", hl:true},
+     {q:"¿Por qué AHORA?", a:"Boda en noviembre"},
+     {q:"Del 1 al 10, ¿compromiso?", a:"10"},
+   ],
+   resultado:"ganado",
+   formatoPago:"sem-2", fechaCierre:"2026-05-17",
+   callRes:"ganada", callDur:"20 min",
+   momentoClave:'[13:15] "¿Puedo pagarlo en dos veces? Hecho, vamos a por ello."',
+   resumen:[
+     "Marta se casa en 6 meses y quiere llegar definida; <b>deadline emocional fuerte</b>.",
+     "Encaje con plan <b>Semestral</b> que cubre justo hasta la boda.",
+     "Eligió pagar fraccionado en 2 cuotas de 600 € para repartir el gasto.",
+     "Motivación máxima (10/10), cero dudas.",
+     "Cerró en la llamada; primer pago 600 € hoy, segundo a 30 días.",
+     "Cobrado 600 € de 1.200 € proyectados."
+   ],
+   transcripcion:[
+     {w:"Álvaro", c:"Marta, ¡enhorabuena por la boda! ¿Cuánto falta?", cl:true},
+     {w:"Marta", c:"Seis meses justos. Quiero llegar espectacular."},
+     {w:"Álvaro", c:"El plan semestral encaja perfecto, te acompaña hasta el día.", cl:true},
+     {w:"Marta", c:"¿Puedo pagarlo en dos veces?"},
+     {w:"Álvaro", c:"Claro, el semestral fraccionado: 600 ahora y 600 el mes que viene.", cl:true},
+     {w:"Marta", c:"Hecho, vamos a por ello."},
+   ]},
+];
+
+/* ===================== VENTAS & KPIs · SERIES POR CLOSER =====================
+   Series FIJAS inventadas (sin Date dinámico). Cada punto del embudo:
+   agendadas → cualificadas → asistencias (show-up) → ventas. Coherentes con
+   el pipeline de cada closer. El último punto de cada serie es el periodo "actual". */
+const KPI_SERIES = {
+  pascu: {
+    dia: [
+      { id:"d1", etq:"Lun 25 may", sub:"Día",            agendadas:3, cualificadas:2, asistencias:2, ventas:0 },
+      { id:"d2", etq:"Mar 26 may", sub:"Día",            agendadas:4, cualificadas:3, asistencias:2, ventas:1 },
+      { id:"d3", etq:"Mié 27 may", sub:"Día",            agendadas:3, cualificadas:3, asistencias:2, ventas:0 },
+      { id:"d4", etq:"Jue 28 may", sub:"Día",            agendadas:4, cualificadas:3, asistencias:3, ventas:1 },
+      { id:"d5", etq:"Vie 29 may", sub:"Día (hoy)",      agendadas:3, cualificadas:2, asistencias:1, ventas:0 },
+    ],
+    semana: [
+      { id:"w1", etq:"Sem 4–8 may",   sub:"Semana",        agendadas:14, cualificadas:11, asistencias:10, ventas:3 },
+      { id:"w2", etq:"Sem 11–15 may", sub:"Semana",        agendadas:16, cualificadas:13, asistencias:12, ventas:4 },
+      { id:"w3", etq:"Sem 18–22 may", sub:"Semana",        agendadas:13, cualificadas:10, asistencias:9,  ventas:3 },
+      { id:"w4", etq:"Sem 25–29 may", sub:"Semana actual", agendadas:17, cualificadas:13, asistencias:9,  ventas:2 },
+    ],
+    mes: [
+      { id:"m1", etq:"Febrero 2026", sub:"Mes",        agendadas:48, cualificadas:38, asistencias:36, ventas:11 },
+      { id:"m2", etq:"Marzo 2026",   sub:"Mes",        agendadas:52, cualificadas:42, asistencias:40, ventas:13 },
+      { id:"m3", etq:"Abril 2026",   sub:"Mes",        agendadas:56, cualificadas:46, asistencias:45, ventas:15 },
+      { id:"m4", etq:"Mayo 2026",    sub:"Mes actual", agendadas:60, cualificadas:48, asistencias:40, ventas:12 },
+    ],
+  },
+  alvaro: {
+    dia: [
+      { id:"d1", etq:"Lun 25 may", sub:"Día",            agendadas:2, cualificadas:2, asistencias:1, ventas:0 },
+      { id:"d2", etq:"Mar 26 may", sub:"Día",            agendadas:3, cualificadas:2, asistencias:2, ventas:1 },
+      { id:"d3", etq:"Mié 27 may", sub:"Día",            agendadas:2, cualificadas:2, asistencias:2, ventas:0 },
+      { id:"d4", etq:"Jue 28 may", sub:"Día",            agendadas:3, cualificadas:2, asistencias:2, ventas:1 },
+      { id:"d5", etq:"Vie 29 may", sub:"Día (hoy)",      agendadas:2, cualificadas:2, asistencias:1, ventas:0 },
+    ],
+    semana: [
+      { id:"w1", etq:"Sem 4–8 may",   sub:"Semana",        agendadas:10, cualificadas:8,  asistencias:7, ventas:2 },
+      { id:"w2", etq:"Sem 11–15 may", sub:"Semana",        agendadas:11, cualificadas:9,  asistencias:9, ventas:3 },
+      { id:"w3", etq:"Sem 18–22 may", sub:"Semana",        agendadas:12, cualificadas:10, asistencias:9, ventas:3 },
+      { id:"w4", etq:"Sem 25–29 may", sub:"Semana actual", agendadas:12, cualificadas:10, asistencias:8, ventas:2 },
+    ],
+    mes: [
+      { id:"m1", etq:"Febrero 2026", sub:"Mes",        agendadas:34, cualificadas:27, asistencias:25, ventas:8 },
+      { id:"m2", etq:"Marzo 2026",   sub:"Mes",        agendadas:38, cualificadas:31, asistencias:30, ventas:10 },
+      { id:"m3", etq:"Abril 2026",   sub:"Mes",        agendadas:42, cualificadas:35, asistencias:34, ventas:12 },
+      { id:"m4", etq:"Mayo 2026",    sub:"Mes actual", agendadas:44, cualificadas:36, asistencias:31, ventas:11 },
+    ],
+  },
+};
+const KPI_NIVEL_LBL = { dia:"Diario", semana:"Semanal", mes:"Mensual" };
+/* Objetivos por closer y nivel (anclados a objetivos reales: ~1 venta/día,
+   3 ventas/semana, 12 ventas/mes para Pascu; un pelín menos para Álvaro). */
+const KPI_OBJETIVOS = {
+  pascu: {
+    dia:    { agendadas:4,  cualificadas:3,  asistencias:3,  ventas:1,  showUp:75 },
+    semana: { agendadas:18, cualificadas:14, asistencias:11, ventas:3,  showUp:75 },
+    mes:    { agendadas:64, cualificadas:51, asistencias:38, ventas:12, showUp:75 },
+  },
+  alvaro: {
+    dia:    { agendadas:3,  cualificadas:2,  asistencias:2,  ventas:1,  showUp:72 },
+    semana: { agendadas:12, cualificadas:10, asistencias:8,  ventas:3,  showUp:72 },
+    mes:    { agendadas:44, cualificadas:35, asistencias:28, ventas:10, showUp:72 },
+  },
+};
+const TICKET_MEDIO = 1450; // € medio por venta (mix: anual 1.800 / semestral 1.200 / nutrición 1.500)
+
+/* ===================== ESTADO PERSISTENTE (localStorage) ===================== */
+const LS_KEY = "daviking_crm_v2";
+let STORE = {};
+try{ STORE = JSON.parse(localStorage.getItem(LS_KEY) || "{}"); }catch(e){ STORE = {}; }
+function saveStore(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(STORE)); }catch(e){} }
+function leadStore(id){ if(!STORE[id]) STORE[id]={}; return STORE[id]; }
+function L(id){
+  const base = LEADS.find(x=>x.id===id);
+  return Object.assign({}, base, STORE[id]||{});
+}
+function setLead(id, patch){ Object.assign(leadStore(id), patch); saveStore(); }
+
+/* notas de revisión de llamadas (Fathom) persistentes */
+const NOTAS_KEY = "daviking_notas_llamadas_v2";
+const notasMem = {};
+function cargarNotas(){ try{ const raw=localStorage.getItem(NOTAS_KEY); return raw?JSON.parse(raw):{}; }catch(e){ return {...notasMem}; } }
+function guardarNota(id, texto){ notasMem[id]=texto; try{ const all=cargarNotas(); all[id]=texto; localStorage.setItem(NOTAS_KEY, JSON.stringify(all)); return "localStorage"; }catch(e){ return "memoria"; } }
+function getNota(id){ const all=cargarNotas(); if(all && all[id]!=null) return all[id]; return notasMem[id]||""; }
+
+/* ===================== ESTADO DE LA UI ===================== */
+let CLOSER = "general"; // arranca en GENERAL = agregado del equipo (Pascu + Álvaro)
+let VIEW = "overview";
+let PIPE_FILTER = "todos";
+let openLeadId = null;
+let mkNivel = "mes";
+let mkIdx = { general:{dia:4,semana:3,mes:3}, pascu:{dia:4,semana:3,mes:3}, alvaro:{dia:4,semana:3,mes:3} };
+let callSel = null;
+
+const CLOSER_INFO = {
+  general:{nombre:"Equipo (todos)", corto:"Equipo", ini:"EQ", cls:"general"},
+  pascu: {nombre:"Pascu Vargas", corto:"Pascu", ini:"PV", cls:"pascu"},
+  alvaro:{nombre:"Álvaro", corto:"Álvaro", ini:"ÁL", cls:"alvaro"},
+};
+const CLOSERS_EQUIPO = ["pascu","alvaro"]; // closers reales que componen "general"
+function esGeneral(){ return CLOSER==="general"; }
+
+/* En GENERAL devuelve TODOS los leads (equipo). Si no, solo los del closer activo. */
+function misLeads(){ return LEADS.map(x=>L(x.id)).filter(l=> esGeneral() || l.closer===CLOSER); }
+
+/* ===================== CASH COLLECTED MODELO ===================== */
+function cashDeLead(l){
+  if(l.estado!=="ganado" || !l.formatoPago) return null;
+  const f = findFormato(l.formatoPago);
+  if(!f) return null;
+  const cierre = l.fechaCierre || HOY;
+  const cuotas = f.cuotas.map((c,i)=>{
+    const fecha = fechaConOffset(cierre, c.off);
+    return {n:i+1, amt:c.amt, fecha, cobrada: fecha<=HOY};
+  });
+  const cobrado = cuotas.filter(c=>c.cobrada).reduce((s,c)=>s+c.amt,0);
+  const proyectado = f.total;
+  const pendiente = proyectado - cobrado;
+  return {formato:f, cuotas, cobrado, proyectado, pendiente, tbc:f.tbc};
+}
+/* Si se pasa un closer concreto agrega solo sus leads; sin argumento usa misLeads()
+   (que en GENERAL ya son TODOS los leads del equipo, suma de Pascu + Álvaro). */
+function totalesCash(closerFiltro){
+  let cobrado=0, proyectado=0, ventas=0, llamadas=0, proximas=0;
+  const fuente = closerFiltro ? LEADS.map(x=>L(x.id)).filter(l=>l.closer===closerFiltro) : misLeads();
+  fuente.forEach(l=>{
+    const c = cashDeLead(l);
+    if(c){ cobrado+=c.cobrado; proyectado+=c.proyectado; ventas++; }
+    if(l.asistio===true || l.estado==="ganado" || l.estado==="nocompra") llamadas++;
+    if(l.estado==="nuevo"||l.estado==="validado"||l.estado==="confirmado"||l.estado==="reagendado") proximas++;
+  });
+  const comision = Math.round(proyectado*COMISION_PCT);       // comisión proyectada (si se cobra todo)
+  const comisionCobrada = Math.round(cobrado*COMISION_PCT);   // comisión DEVENGADA = sobre lo COBRADO
+  return {cobrado, proyectado, pendiente:proyectado-cobrado, ventas, llamadas, proximas, comision, comisionCobrada};
+}
+
+/* ===================== TAREAS HOY / PENDIENTE ===================== */
+function tareasHoy(){
+  const out=[];
+  misLeads().forEach(l=>{
+    const cs = esGeneral() ? " · 👤 "+CLOSER_INFO[l.closer].corto : "";
+    if(l.llamada===HOY && (l.estado==="confirmado")){ out.push({t:"Llamada HOY con "+l.nombre, m:"Confirmada · "+l.objetivo+cs, ico:"📞", cls:"green", id:l.id}); }
+    if(esFuturo(l.llamada) && !l.validada && l.estado!=="reagendado"){ out.push({t:"Validar a "+l.nombre, m:"¿Cualifica? · llamada "+etiquetaCuando(l.llamada,"")+cs, ico:"✅", cls:"blue", id:l.id}); }
+    if(esFuturo(l.llamada) && l.validada && !l.confirmada && l.estado!=="reagendado"){ out.push({t:"Confirmar asistencia de "+l.nombre, m:"Llamada "+etiquetaCuando(l.llamada,"")+cs, ico:"📌", cls:"amber", id:l.id}); }
+  });
+  return out;
+}
+function tareasPendientes(){
+  const out=[];
+  misLeads().forEach(l=>{
+    const cs = esGeneral() ? " · 👤 "+CLOSER_INFO[l.closer].corto : "";
+    if(l.estado==="realizada"){ out.push({t:"Registrar resultado de "+l.nombre, m:"Llamada del "+fmtCorta(l.llamada)+" · pago / no compra / no-show"+cs, ico:"📝", cls:"red", id:l.id}); }
+    if(l.estado==="reagendado"){ out.push({t:"Reconfirmar a "+l.nombre, m:"Reagendado a "+etiquetaCuando(l.llamada,"")+cs, ico:"🔄", cls:"amber", id:l.id}); }
+  });
+  return out;
+}
+
+/* ===================== RENDER: OVERVIEW ===================== */
+function renderOverview(){
+  const ci = CLOSER_INFO[CLOSER];
+  if(esGeneral()){
+    document.getElementById("ov-eyebrow").textContent = "Vista General · Equipo (todos)";
+    document.getElementById("ov-title").innerHTML = "Panel del equipo 👥";
+  } else {
+    document.getElementById("ov-eyebrow").textContent = "Closer · "+ci.nombre;
+    document.getElementById("ov-title").innerHTML = "Hola, "+ci.corto+" 👋";
+  }
+  const t = totalesCash();
+  const cards=[
+    {hero:true, ico:"📞", n:t.llamadas, l:"Llamadas realizadas<br>este periodo", trend:"up", tt:"+3 vs abril"},
+    {cls:"", ico:"🔜", n:t.proximas, l:"Próximas / pendientes<br>en agenda", trend:"flat", tt:"a validar y confirmar"},
+    {cls:"green", ico:"🏆", n:t.ventas, l:"Cierres en el pipeline<br>(con pago registrado)", trend:"up", tt:"ventas con pago registrado en el CRM"},
+    {cls:"amber", ico:"💸", n:eur(t.cobrado), l:"Cash collected<br>cobrado", trend:"flat", tt:"de "+eur(t.proyectado)+" proyectado"},
+  ];
+  document.getElementById("ov-cards").innerHTML = cards.map(c=>`
+    <div class="bigcard ${c.hero?'hero':''} ${c.cls||''}">
+      <div class="ico">${c.ico}</div>
+      <div class="n">${c.n}</div>
+      <div class="l">${c.l}</div>
+      <div class="trend ${c.trend}">${c.trend==='up'?'▲':'•'} ${c.tt}</div>
+    </div>`).join("");
+
+  const pcCob = t.proyectado? Math.round(t.cobrado/t.proyectado*100):0;
+  document.getElementById("cash-grid").innerHTML = `
+    <div class="cashbig cobrado">
+      <div class="cv">${eur(t.cobrado)}</div>
+      <div class="cl">Cobrado (ya en caja)</div>
+      <div class="cnote">El ${pcCob}% de lo proyectado ya está cobrado.</div>
+    </div>
+    <div class="cashbig">
+      <div class="cv">${eur(t.proyectado)}</div>
+      <div class="cl">Proyectado (total firmado)</div>
+      <div class="cnote">Suma de todos los formatos cerrados.</div>
+    </div>
+    <div class="cashbig">
+      <div class="cv" style="color:var(--amber)">${eur(t.pendiente)}</div>
+      <div class="cl">Pendiente de cobro</div>
+      <div class="cnote">Cuotas futuras ya firmadas.</div>
+    </div>
+    <div class="cashbig">
+      <div class="cv" style="color:#A7E8CC">${eur(t.comisionCobrada)}</div>
+      <div class="cl">Comisión devengada (10% de lo cobrado)</div>
+      <div class="cnote">Hasta ${eur(t.comision)} cuando se cobre todo lo firmado (proyectada).</div>
+    </div>
+    <div class="cashbar">
+      <div class="cbtop"><span>Avance de cobro</span><span><b>${eur(t.cobrado)}</b> / ${eur(t.proyectado)}</span></div>
+      <div class="track">
+        <i class="done" style="width:${pcCob}%"></i>
+        <i class="pend" style="width:${100-pcCob}%"></i>
+      </div>
+      <div class="cblegend">
+        <span><i class="done"></i> Cobrado · ${eur(t.cobrado)}</span>
+        <span><i class="pend"></i> Pendiente (cuotas futuras) · ${eur(t.pendiente)}</span>
+      </div>
+    </div>`;
+
+  // Comparación rápida Pascu vs Álvaro (solo en GENERAL)
+  document.getElementById("ov-vs").innerHTML = esGeneral() ? vsEquipoHTML() : "";
+
+  const hoy = tareasHoy();
+  document.getElementById("cnt-hoy").textContent = hoy.length;
+  document.getElementById("hoy-list").innerHTML = hoy.length? hoy.map(td=>todoRow(td)).join("")
+    : `<div class="empty"><div class="em">✨</div>Nada urgente para hoy. Buen trabajo.</div>`;
+
+  const pend = tareasPendientes();
+  document.getElementById("cnt-pend").textContent = pend.length;
+  document.getElementById("pend-list").innerHTML = pend.length? pend.map(td=>todoRow(td)).join("")
+    : `<div class="empty"><div class="em">✅</div>Sin resultados pendientes de registrar.</div>`;
+}
+function todoRow(td){
+  return `<div class="todo ${td.cls}" onclick="openLead('${td.id}')">
+    <div class="tdico">${td.ico}</div>
+    <div class="tdx"><div class="tdt">${td.t}</div><div class="tdm">${td.m}</div></div>
+    <div class="tdgo">›</div>
+  </div>`;
+}
+
+/* ===================== COMPARACIÓN PASCU vs ÁLVARO (solo GENERAL) ===================== */
+function vsEquipoHTML(){
+  const tp = totalesCash("pascu");
+  const ta = totalesCash("alvaro");
+  // "quién va por delante" se decide por cash COBRADO; desempate por ventas
+  let lider;
+  if(tp.cobrado!==ta.cobrado) lider = tp.cobrado>ta.cobrado ? "pascu" : "alvaro";
+  else if(tp.ventas!==ta.ventas) lider = tp.ventas>ta.ventas ? "pascu" : "alvaro";
+  else lider = "empate";
+  const dif = Math.abs(tp.cobrado-ta.cobrado);
+  const card = (key, tot)=>{
+    const ci = CLOSER_INFO[key];
+    const esLider = lider===key;
+    return `<div class="vs-card ${esLider?'lead':''}">
+      <div class="vh">
+        <span class="avatar sm ${ci.cls}">${ci.ini}</span>
+        <span class="nm">${ci.corto}</span>
+        ${esLider?'<span class="crown">👑 por delante</span>':''}
+      </div>
+      <div class="vrow"><span class="vl">Cash cobrado</span><span class="vv green">${eur(tot.cobrado)}</span></div>
+      <div class="vrow"><span class="vl">Proyectado</span><span class="vv">${eur(tot.proyectado)}</span></div>
+      <div class="vrow"><span class="vl">Ventas</span><span class="vv">${tot.ventas}</span></div>
+      <div class="vrow"><span class="vl">Llamadas</span><span class="vv">${tot.llamadas}</span></div>
+      <div class="vrow"><span class="vl">En juego (agenda)</span><span class="vv">${tot.proximas}</span></div>
+    </div>`;
+  };
+  const mid = lider==="empate"
+    ? `<div class="vs-mid"><div class="vsbig">=</div><div class="vssm">Empatados</div></div>`
+    : `<div class="vs-mid"><div class="vsbig">VS</div><div class="vssm">+${eur(dif)} líder</div></div>`;
+  return `<div class="h-eyebrow" style="margin:4px 0 10px">⚖️ Comparación rápida del equipo · quién va por delante</div>
+    <div class="vs-wrap">${card("pascu",tp)}${mid}${card("alvaro",ta)}</div>`;
+}
+
+/* ===================== RENDER: PIPELINE (KANBAN) ===================== */
+function renderPipeline(){
+  const ci = CLOSER_INFO[CLOSER];
+  document.getElementById("pipe-eyebrow").textContent = esGeneral() ? "Pipeline · Equipo (todos)" : "Pipeline · "+ci.nombre;
+  document.getElementById("pipe-who").textContent = esGeneral() ? "todos los" : "tus";
+  let leads = misLeads();
+  if(PIPE_FILTER==="activos") leads = leads.filter(l=>ESTADOS[l.estado].grupo==="activo");
+  if(PIPE_FILTER==="cerrados") leads = leads.filter(l=>ESTADOS[l.estado].grupo==="cerrado");
+  let cols = ORDEN_KANBAN.slice();
+  if(PIPE_FILTER==="activos") cols = cols.filter(c=>ESTADOS[c].grupo==="activo");
+  if(PIPE_FILTER==="cerrados") cols = cols.filter(c=>ESTADOS[c].grupo==="cerrado");
+  document.getElementById("kanban").innerHTML = cols.map(est=>{
+    const inCol = leads.filter(l=>l.estado===est);
+    const e = ESTADOS[est];
+    return `<div class="kcol">
+      <div class="kcol-h"><span class="kdot" style="background:${e.dot}"></span><span class="kt">${e.t}</span><span class="kc">${inCol.length}</span></div>
+      <div class="kcol-cards">
+        ${inCol.length? inCol.map(l=>leadCardHTML(l)).join("") : `<div class="kc-empty">— vacío —</div>`}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ===================== TARJETA DE LEAD ===================== */
+function leadCardHTML(l){
+  const cash = cashDeLead(l);
+  const cuando = l.estado==="ganado" ? "Cerrado "+fmtCorta(l.fechaCierre||l.llamada)
+    : esFuturo(l.llamada) ? "Llamada "+etiquetaCuando(l.llamada,"")
+    : esPasado(l.llamada) ? "Llamada "+fmtCorta(l.llamada)
+    : "Llamada hoy";
+  let checks="";
+  if(ESTADOS[l.estado].grupo==="activo"){
+    checks = `<div class="lchecks" onclick="event.stopPropagation()">
+      <span class="chk ${l.validada?'on':''}" onclick="toggleCheck('${l.id}','validada')"><span class="cb"></span>Valida</span>
+      <span class="chk ${l.confirmada?'on':''}" onclick="toggleCheck('${l.id}','confirmada')"><span class="cb"></span>Confirma</span>
+      ${esPasado(l.llamada) || l.estado==="realizada" ?
+        `<span class="chk ${l.asistio===false?'on red':''}" onclick="toggleCheck('${l.id}','noshow')"><span class="cb"></span>No-show</span>` : ``}
+    </div>`;
+  }
+  let cashHTML="";
+  if(cash){
+    const pc = Math.round(cash.cobrado/cash.proyectado*100);
+    cashHTML=`<div class="lcash">
+      <div class="crow"><span>Cobrado</span><span class="cv green">${eur(cash.cobrado)}</span></div>
+      <div class="crow"><span style="color:var(--muted)">Proyectado ${cash.tbc?'<span class=tbc>por confirmar</span>':''}</span><span class="cv amber">${eur(cash.proyectado)}</span></div>
+      <div class="ctrack"><i class="done" style="width:${pc}%"></i><i class="pend" style="width:${100-pc}%"></i></div>
+    </div>`;
+  }
+  const acciones = accionesEstado(l);
+  const ownTag = esGeneral()
+    ? `<span class="owntag" title="Closer: ${CLOSER_INFO[l.closer].corto}"><span class="avatar sm ${CLOSER_INFO[l.closer].cls}">${CLOSER_INFO[l.closer].ini}</span>${CLOSER_INFO[l.closer].corto}</span>`
+    : "";
+  return `<div class="leadcard s-${l.estado}" onclick="openLead('${l.id}')">
+    <div class="lct">
+      <span class="avatar sm ${CLOSER_INFO[l.closer].cls}">${iniciales(l.nombre)}</span>
+      <span class="lnm">${l.nombre}</span>
+      ${ownTag}
+    </div>
+    <div class="lmeta">
+      <span class="lr"><span class="ki">📅</span>${cuando}</span>
+      <span class="lr"><span class="ki">🎯</span>${l.objetivo}</span>
+    </div>
+    <div class="lpain"><b>Dolor:</b> ${l.dolor}</div>
+    ${checks}
+    ${cashHTML}
+    ${acciones}
+  </div>`;
+}
+function iniciales(n){ return n.split(" ").map(p=>p[0]).slice(0,2).join("").toUpperCase(); }
+
+function accionesEstado(l){
+  let b=[];
+  if(l.estado==="nuevo") b.push(`<button class="btn sm blue" onclick="event.stopPropagation();setEstado('${l.id}','validado')">Validar →</button>`);
+  else if(l.estado==="validado") b.push(`<button class="btn sm green" onclick="event.stopPropagation();setEstado('${l.id}','confirmado')">Confirmar →</button>`);
+  else if(l.estado==="confirmado") b.push(`<button class="btn sm amber" onclick="event.stopPropagation();setEstado('${l.id}','realizada')">Llamada hecha →</button>`);
+  else if(l.estado==="realizada"){
+    b.push(`<button class="btn sm primary" onclick="event.stopPropagation();openLead('${l.id}',true)">💸 Registrar pago</button>`);
+    b.push(`<button class="btn sm red" onclick="event.stopPropagation();setEstado('${l.id}','nocompra')">No compra</button>`);
+    b.push(`<button class="btn sm" onclick="event.stopPropagation();setEstado('${l.id}','reagendado')">Reagendar</button>`);
+  } else if(l.estado==="reagendado"){
+    b.push(`<button class="btn sm green" onclick="event.stopPropagation();setEstado('${l.id}','confirmado')">Confirmar →</button>`);
+  }
+  if(!b.length) return "";
+  return `<div class="lactions">${b.join("")}</div>`;
+}
+
+/* ===================== RENDER: AGENDA ===================== */
+function renderAgenda(){
+  const ci = CLOSER_INFO[CLOSER];
+  document.getElementById("ag-eyebrow").textContent = esGeneral() ? "Agenda · Equipo (todos)" : "Agenda · "+ci.nombre;
+  const leads = misLeads();
+  const futuras = leads.filter(l=> esFuturo(l.llamada) && ESTADOS[l.estado].grupo==="activo")
+                       .sort((a,b)=>a.llamada<b.llamada?-1:1);
+  const pasadas = leads.filter(l=> l.estado==="realizada" || (esPasado(l.llamada) && (l.estado==="confirmado")) )
+                       .sort((a,b)=>a.llamada<b.llamada?1:-1);
+  document.getElementById("future-cnt").textContent = futuras.length;
+  document.getElementById("past-cnt").textContent = pasadas.length;
+  document.getElementById("future-grid").innerHTML = futuras.length? futuras.map(l=>leadCardHTML(l)).join("")
+    : `<div class="empty" style="grid-column:1/-1"><div class="em">📭</div>No tienes llamadas futuras pendientes de preparar.</div>`;
+  document.getElementById("past-grid").innerHTML = pasadas.length? pasadas.map(l=>leadCardHTML(l)).join("")
+    : `<div class="empty" style="grid-column:1/-1"><div class="em">✅</div>Todas las llamadas pasadas tienen resultado registrado.</div>`;
+}
+
+/* ===================== ACCIONES DE ESTADO Y CHECKS ===================== */
+function setEstado(id, nuevo){
+  const patch={estado:nuevo};
+  if(nuevo==="validado") patch.validada=true;
+  if(nuevo==="confirmado"){ patch.validada=true; patch.confirmada=true; }
+  if(nuevo==="realizada"){ patch.asistio=true; if(!L(id).resultado) patch.resultado="pendiente"; }
+  if(nuevo==="noshow"){ patch.asistio=false; patch.resultado="noshow"; }
+  if(nuevo==="nocompra"){ patch.resultado="nocompra"; }
+  setLead(id, patch);
+  toast(estadoToast(nuevo));
+  rerender();
+}
+function estadoToast(e){
+  const m={validado:"Lead validado ✓",confirmado:"Asistencia confirmada ✓",realizada:"Llamada marcada como realizada",nocompra:"Marcado como No compra",noshow:"Marcado como No-show",ganado:"¡Venta registrada! 🏆",reagendado:"Lead reagendado"};
+  return m[e]||"Actualizado";
+}
+function toggleCheck(id, tipo){
+  const l=L(id);
+  if(tipo==="validada"){
+    const v=!l.validada;
+    const patch={validada:v};
+    if(v && l.estado==="nuevo") patch.estado="validado";
+    if(!v && l.estado==="validado") patch.estado="nuevo";
+    setLead(id,patch); toast(v?"Validado ✓":"Validación quitada");
+  } else if(tipo==="confirmada"){
+    const v=!l.confirmada;
+    const patch={confirmada:v};
+    if(v){ patch.validada=true; if(l.estado==="nuevo"||l.estado==="validado") patch.estado="confirmado"; }
+    if(!v && l.estado==="confirmado") patch.estado="validado";
+    setLead(id,patch); toast(v?"Asistencia confirmada ✓":"Confirmación quitada");
+  } else if(tipo==="noshow"){
+    const v=!(l.asistio===false);
+    if(v){ setLead(id,{asistio:false,estado:"noshow",resultado:"noshow"}); toast("Marcado como No-show"); }
+    else { setLead(id,{asistio:null,estado:"confirmado",resultado:undefined}); toast("No-show deshecho"); }
+  }
+  rerender();
+}
+
+/* ===================== DRAWER DE LEAD ===================== */
+function openLead(id, scrollPago){
+  openLeadId=id;
+  const l=L(id);
+  const ci=CLOSER_INFO[l.closer];
+  document.getElementById("d-name").innerHTML = `<span class="avatar lg ${ci.cls}">${iniciales(l.nombre)}</span><div><h2>${l.nombre}</h2></div>`;
+  const e=ESTADOS[l.estado];
+  document.getElementById("d-meta").innerHTML =
+    `<span class="pill" style="background:${e.dot}22;color:${e.color};border-color:${e.dot}55"><span class="dot-s" style="background:${e.dot}"></span>${e.t}</span>
+     <span class="pill ghost">${l.origen}</span>
+     <span class="pill ghost">Closer: ${ci.corto}</span>`;
+  document.getElementById("d-body").innerHTML = drawerBody(l);
+  document.getElementById("backdrop").classList.add("open");
+  document.getElementById("drawer").classList.add("open");
+  if(scrollPago){ setTimeout(()=>{ const el=document.getElementById("pago-anchor"); if(el) el.scrollIntoView({behavior:"smooth"}); },180); }
+}
+function closeDrawer(){
+  document.getElementById("backdrop").classList.remove("open");
+  document.getElementById("drawer").classList.remove("open");
+  openLeadId=null;
+}
+function refreshDrawer(){ if(openLeadId) openLead(openLeadId); }
+function rerenderBackground(){ renderActive(); updateNav(); }
+
+function drawerBody(l){
+  const cash=cashDeLead(l);
+  let html = `<div class="dsec"><span class="si">👤</span>Datos de contacto · a un clic</div>
+    <div class="kvgrid">
+      <div class="kv"><div class="k">Email</div><div class="v copy" onclick="copiar('${l.email}')">${l.email}<span class="cpi">⧉ copiar</span></div></div>
+      <div class="kv"><div class="k">Teléfono</div><div class="v copy" onclick="copiar('${l.tel}')">${l.tel}<span class="cpi">⧉ copiar</span></div></div>
+      <div class="kv"><div class="k">Agendó</div><div class="v">${fmtFecha(l.agendado)} (${diaSemana(l.agendado).slice(0,3)})</div></div>
+      <div class="kv"><div class="k">Llamada</div><div class="v">${fmtFecha(l.llamada)} (${diaSemana(l.llamada).slice(0,3)})</div></div>
+      <div class="kv"><div class="k">Presupuesto declarado</div><div class="v">${l.presupuesto}</div></div>
+      <div class="kv"><div class="k">Nivel / contexto</div><div class="v">${l.nivel}</div></div>
+    </div>`;
+
+  html += `<div class="dsec"><span class="si">🧭</span>Estado del lead</div>${timelineHTML(l)}`;
+
+  if(ESTADOS[l.estado].grupo==="activo"){
+    html += `<div class="dsec"><span class="si">⚡</span>Checks rápidos</div>
+      <div class="lchecks" style="margin-top:0">
+        <span class="chk ${l.validada?'on':''}" onclick="toggleCheck('${l.id}','validada');refreshDrawer()"><span class="cb"></span>Cualifica (validada)</span>
+        <span class="chk ${l.confirmada?'on':''}" onclick="toggleCheck('${l.id}','confirmada');refreshDrawer()"><span class="cb"></span>Asistirá (confirmada)</span>
+        <span class="chk ${l.asistio===false?'on red':''}" onclick="toggleCheck('${l.id}','noshow');refreshDrawer()"><span class="cb"></span>No-show</span>
+      </div>`;
+  }
+
+  html += `<div class="dsec"><span class="si">📋</span>Respuestas del formulario (Calendly)</div>
+    <div class="qabox">${l.form.map(f=>`<div class="qa"><div class="q">${f.q}</div><div class="a ${f.hl?'hl':''}">${f.a}</div></div>`).join("")}</div>
+    <div style="margin-top:11px" class="leadcard" onclick="event.stopPropagation()"><div class="lpain" style="margin-top:0"><b>Dolor / nota previa:</b> ${l.dolor}</div></div>`;
+
+  if(l.resumen){
+    html += `<div class="dsec"><span class="si">🎧</span>Resumen ejecutivo de la llamada (Fathom)</div>
+      <div class="fathom">
+        <div class="fh">⚡ Generado automáticamente (estilo Fathom)</div>
+        <ul>${l.resumen.map(r=>`<li>${r}</li>`).join("")}</ul>
+      </div>`;
+    if(l.transcripcion && l.transcripcion.length){
+      html += `<div class="transc-toggle" id="tt-toggle" onclick="toggleTransc()">🗒️ Ver transcripción completa (${l.transcripcion.length} intervenciones)<span class="ch">⌄</span></div>
+        <div class="transc" id="transc">
+          <div class="transc-inner">
+            ${l.transcripcion.map(t=>`<div class="tline"><span class="who ${t.cl?'cl':'le'}">${t.w}</span><span class="txt">${t.c}</span></div>`).join("")}
+          </div>
+        </div>`;
+    }
+  }
+
+  const nota = (STORE[l.id]&&STORE[l.id].nota) || "";
+  html += `<div class="dsec"><span class="si">✏️</span>Notas de seguimiento</div>
+    <textarea class="notes-ta" id="nota-ta" placeholder="Escribe aquí tu seguimiento: objeciones, próximos pasos, cuándo volver a llamar...">${escapeHtml(nota)}</textarea>
+    <div class="notes-bar">
+      <button class="btn primary sm" onclick="guardarNotaLead('${l.id}')">Guardar nota</button>
+      <span class="notes-saved" id="nota-saved">✓ Guardado</span>
+    </div>`;
+
+  html += `<div id="pago-anchor"></div>`;
+  if(l.estado==="ganado" && cash){
+    html += pagoCerradoHTML(l, cash);
+  } else if(l.estado==="realizada"){
+    html += pagoSelectorHTML(l);
+  }
+
+  html += `<div class="dsec"><span class="si">🔀</span>Cambiar estado</div>${drawerEstadoBotones(l)}`;
+  return html;
+}
+function escapeHtml(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+function timelineHTML(l){
+  const flow=[
+    {k:"nuevo", t:"Nuevo / Agendado", dt:"Agendó "+fmtCorta(l.agendado)},
+    {k:"validado", t:"Validado (cualifica)", dt:l.validada?"Cualifica ✓":"Pendiente de validar"},
+    {k:"confirmado", t:"Confirmado", dt:l.confirmada?"Asistencia confirmada ✓":"Sin confirmar"},
+    {k:"realizada", t:"Llamada realizada", dt:l.asistio===true?"Asistió ✓":l.asistio===false?"No-show ✕":"Programada "+fmtCorta(l.llamada)},
+    {k:"final", t: l.estado==="ganado"?"Pago hecho · Ganado":l.estado==="nocompra"?"No compra":l.estado==="noshow"?"No-show":l.estado==="reagendado"?"Reagendado":"Desenlace", dt: desenlaceTexto(l)},
+  ];
+  const idxOrden=["nuevo","validado","confirmado","realizada"];
+  const cur=idxOrden.indexOf(l.estado);
+  return `<div class="tl">${flow.map((s,i)=>{
+    let cls="pend";
+    if(s.k==="final"){
+      if(["ganado","nocompra","noshow","reagendado"].includes(l.estado)) cls="done";
+    } else {
+      const si=idxOrden.indexOf(s.k);
+      if(cur===-1){ cls="done"; }
+      else if(si<cur) cls="done";
+      else if(si===cur) cls="now";
+    }
+    if(s.k==="validado" && l.validada && cls==="pend") cls="done";
+    if(s.k==="confirmado" && l.confirmada && cls==="pend") cls="done";
+    if(s.k==="realizada" && l.asistio===true && cls==="pend") cls="done";
+    const mk = cls==="done"?"✓":cls==="now"?"●":(i+1);
+    return `<div class="tlstep ${cls}"><div class="mk">${mk}</div><div class="ti"><div class="nm">${s.t}</div><div class="dt">${s.dt}</div></div></div>`;
+  }).join("")}</div>`;
+}
+function desenlaceTexto(l){
+  if(l.estado==="ganado") return "Cerrado "+fmtCorta(l.fechaCierre||l.llamada);
+  if(l.estado==="nocompra") return "No compró";
+  if(l.estado==="noshow") return "No se presentó";
+  if(l.estado==="reagendado") return "Movida a "+fmtCorta(l.llamada);
+  return "Pendiente de registrar";
+}
+
+function drawerEstadoBotones(l){
+  const all=[
+    {k:"validado",t:"Validado",cls:"blue"},
+    {k:"confirmado",t:"Confirmado",cls:"green"},
+    {k:"realizada",t:"Llamada hecha",cls:"amber"},
+    {k:"nocompra",t:"No compra",cls:"red"},
+    {k:"noshow",t:"No-show",cls:"red"},
+    {k:"reagendado",t:"Reagendar",cls:""},
+  ];
+  return `<div class="dactions">${all.filter(b=>b.k!==l.estado).map(b=>
+    `<button class="btn ${b.cls}" onclick="setEstado('${l.id}','${b.k}');refreshDrawer()">${b.t}</button>`).join("")}</div>`;
+}
+
+/* ----- registro de pago: selector con enlaces Hotmart ----- */
+function pagoSelectorHTML(l){
+  let html=`<div class="dsec"><span class="si">💸</span>Registrar pago · Ganar este lead</div>
+    <div style="font-size:12.5px;color:var(--ink-2);margin-bottom:12px">Elige el formato que acordasteis y pásale el <b>enlace de pago de Hotmart</b> (botón 🔗). Calculamos el cash collected y el calendario de cobros para tu comisión.</div>
+    <div class="payfmt" id="payfmt">`;
+  FORMATOS.forEach(g=>{
+    html+=`<div class="fmtgroup">
+      <div class="fmtgroup-h">${g.grupo} ${g.tbc?'<span class="tbc">enlace por confirmar</span>':''}</div>`;
+    g.opts.forEach(o=>{
+      html+=`<div class="fmtopt" data-fmt="${o.id}" onclick="selFmt('${o.id}')">
+        <span class="ra"></span>
+        <div class="fx"><div class="ft">${o.t}</div><div class="fd">${o.d}</div></div>
+        <div class="fp green">${eur(o.total)}</div>
+      </div>`;
+      // fila de enlace Hotmart (o por confirmar)
+      if(o.link){
+        html+=`<div class="fmtlink">
+          <span class="flk">${o.link}</span>
+          <button class="copylink" onclick="event.stopPropagation();copiarEnlace('${o.id}')">🔗 Copiar enlace de pago</button>
+        </div>`;
+      } else {
+        html+=`<div class="fmtlink">
+          <span class="flk">— enlace de pago pendiente de generar en Hotmart —</span>
+          <button class="copylink tbc" onclick="event.stopPropagation();toast('Enlace por confirmar para «${o.t}»')">⏳ Enlace por confirmar</button>
+        </div>`;
+      }
+    });
+    html+=`</div>`;
+  });
+  html+=`</div>
+    <div id="pago-preview"></div>
+    <button class="btn primary block" id="confirm-pago" style="margin-top:14px" disabled onclick="confirmarPago('${l.id}')">Selecciona un formato para registrar el pago</button>`;
+  return html;
+}
+let fmtSeleccionado=null;
+function selFmt(id){
+  fmtSeleccionado=id;
+  document.querySelectorAll("#payfmt .fmtopt").forEach(el=>el.classList.toggle("sel", el.dataset.fmt===id));
+  const f=findFormato(id);
+  const cierre=HOY;
+  const cuotas=f.cuotas.map((c,i)=>({n:i+1, amt:c.amt, fecha:fechaConOffset(cierre,c.off), cobrada:c.off===0}));
+  const cobrado=cuotas.filter(c=>c.cobrada).reduce((s,c)=>s+c.amt,0);
+  document.getElementById("pago-preview").innerHTML = previewPago(f, cuotas, cobrado);
+  const btn=document.getElementById("confirm-pago");
+  btn.disabled=false; btn.textContent="✓ Registrar pago "+eur(cobrado)+" hoy · "+f.t;
+}
+function copiarEnlace(id){
+  const f=findFormato(id);
+  if(!f || !f.link){ toast("Enlace por confirmar"); return; }
+  const ok=()=>toast("🔗 Enlace de pago copiado · "+f.t);
+  const fail=()=>{ try{ window.prompt("Copia el enlace de pago a mano:", f.link); }catch(e){} };
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(f.link).then(ok, fail); }
+    else { fail(); }
+  }catch(e){ fail(); }
+}
+function previewPago(f, cuotas, cobrado){
+  const proyectado=f.total, pendiente=proyectado-cobrado;
+  const comCobrada=Math.round(cobrado*COMISION_PCT);
+  const comTotal=Math.round(proyectado*COMISION_PCT);
+  return `<div class="calendar-cobros">
+      ${cuotas.map(c=>`<div class="cuota ${c.cobrada?'cobrada':'pend'}">
+        <div class="cnum">${c.cobrada?'✓':c.n}</div>
+        <div class="cx"><div class="cdt">Cuota ${c.n} · ${eur(c.amt)}</div>
+          <div class="cwhen">${c.cobrada?'Cobrada hoy ('+fmtCorta(c.fecha)+')':'Programada: '+fmtFecha(c.fecha)+' · '+textoOffset(c.fecha)}</div></div>
+        <div class="camt">${eur(c.amt)}</div>
+      </div>`).join("")}
+    </div>
+    <div class="paysummary">
+      <div class="paysum"><div class="pl">Cobrado hoy</div><div class="pv green">${eur(cobrado)}</div></div>
+      <div class="paysum"><div class="pl">Proyectado ${f.tbc?'<span class=tbc>p.c.</span>':''}</div><div class="pv">${eur(proyectado)}</div></div>
+      <div class="paysum"><div class="pl">Pendiente</div><div class="pv amber">${eur(pendiente)}</div></div>
+    </div>
+    <div class="commission">
+      <span class="ci">💰</span>
+      <div class="cx"><div class="ct">Comisión devengada (10% de lo COBRADO)</div><div class="cv">${eur(comCobrada)}</div></div>
+      <div class="cnote">Hasta ${eur(comTotal)} cuando<br>entren todas las cuotas</div>
+    </div>`;
+}
+function textoOffset(fecha){
+  const d=diffDias(HOY,fecha);
+  if(d<=0) return "hoy";
+  if(d<=33) return "≈ a 30 días";
+  return "≈ a 60 días";
+}
+function confirmarPago(id){
+  if(!fmtSeleccionado) return;
+  setLead(id, {estado:"ganado", resultado:"ganado", formatoPago:fmtSeleccionado, fechaCierre:HOY, asistio:true, validada:true, confirmada:true, callRes:"ganada"});
+  fmtSeleccionado=null;
+  toast("¡Venta registrada! 🏆 Cash collected actualizado");
+  refreshDrawer();
+  rerenderBackground();
+}
+function pagoCerradoHTML(l, cash){
+  const comTotal=Math.round(cash.proyectado*COMISION_PCT);
+  const comCob=Math.round(cash.cobrado*COMISION_PCT);
+  const f=cash.formato;
+  return `<div class="dsec"><span class="si">💸</span>Pago registrado · ${f.t}</div>
+    ${f.tbc?'<div style="margin-bottom:10px"><span class="tbc">Enlace de pago del plan por confirmar</span></div>':''}
+    ${f.link?`<div class="fmtlink" style="border:1px solid var(--line);border-radius:11px;margin-bottom:12px">
+      <span class="flk">${f.link}</span>
+      <button class="copylink" onclick="copiarEnlace('${f.id}')">🔗 Copiar enlace de pago</button>
+    </div>`:''}
+    <div class="calendar-cobros">
+      ${cash.cuotas.map(c=>`<div class="cuota ${c.cobrada?'cobrada':'pend'}">
+        <div class="cnum">${c.cobrada?'✓':c.n}</div>
+        <div class="cx"><div class="cdt">Cuota ${c.n} · ${eur(c.amt)}</div>
+          <div class="cwhen">${c.cobrada?'Cobrada el '+fmtFecha(c.fecha):'Pendiente · '+fmtFecha(c.fecha)}</div></div>
+        <div class="camt">${eur(c.amt)}</div>
+      </div>`).join("")}
+    </div>
+    <div class="paysummary">
+      <div class="paysum"><div class="pl">Cobrado</div><div class="pv green">${eur(cash.cobrado)}</div></div>
+      <div class="paysum"><div class="pl">Proyectado</div><div class="pv">${eur(cash.proyectado)}</div></div>
+      <div class="paysum"><div class="pl">Pendiente</div><div class="pv amber">${eur(cash.pendiente)}</div></div>
+    </div>
+    <div class="commission">
+      <span class="ci">💰</span>
+      <div class="cx"><div class="ct">Comisión devengada (10% de lo cobrado)</div><div class="cv">${eur(comCob)}</div></div>
+      <div class="cnote">Hasta ${eur(comTotal)} cuando entren todas las cuotas · cobrado ${Math.round(cash.cobrado/cash.proyectado*100)}%</div>
+    </div>`;
+}
+
+function toggleTransc(){
+  document.getElementById("transc").classList.toggle("open");
+  document.getElementById("tt-toggle").classList.toggle("open");
+}
+function guardarNotaLead(id){
+  const v=document.getElementById("nota-ta").value;
+  setLead(id,{nota:v});
+  const s=document.getElementById("nota-saved");
+  s.classList.add("show"); setTimeout(()=>s.classList.remove("show"),1600);
+  toast("Nota guardada");
+}
+function copiar(txt){
+  try{ navigator.clipboard.writeText(txt); }catch(e){}
+  toast("Copiado: "+txt);
+}
+
+/* ============================================================
+   ===== VENTAS & KPIs (portado y adaptado de M&V) =====
+   Todo filtrado por el closer activo (CLOSER).
+   ============================================================ */
+/* En GENERAL las series y objetivos SUMAN ambos closers, punto por punto.
+   Para Pascu/Álvaro se devuelve su serie individual tal cual. */
+function serieDeNivel(closer, nivel){
+  if(closer!=="general") return KPI_SERIES[closer][nivel];
+  const base = KPI_SERIES.pascu[nivel];
+  return base.map((p,i)=>{
+    const sumar = (k)=> CLOSERS_EQUIPO.reduce((s,c)=> s + (KPI_SERIES[c][nivel][i]?.[k]||0), 0);
+    return { id:p.id, etq:p.etq, sub:p.sub,
+      agendadas:sumar("agendadas"), cualificadas:sumar("cualificadas"),
+      asistencias:sumar("asistencias"), ventas:sumar("ventas") };
+  });
+}
+function objetivoDeNivel(closer, nivel){
+  if(closer!=="general") return KPI_OBJETIVOS[closer][nivel];
+  const sum = (k)=> CLOSERS_EQUIPO.reduce((s,c)=> s + KPI_OBJETIVOS[c][nivel][k], 0);
+  // show-up objetivo del equipo = media de los objetivos individuales
+  const showUp = Math.round(CLOSERS_EQUIPO.reduce((s,c)=> s + KPI_OBJETIVOS[c][nivel].showUp,0)/CLOSERS_EQUIPO.length);
+  return { agendadas:sum("agendadas"), cualificadas:sum("cualificadas"), asistencias:sum("asistencias"), ventas:sum("ventas"), showUp };
+}
+function kpiSerie(){ return serieDeNivel(CLOSER, mkNivel); }
+function kpiObjetivo(){ return objetivoDeNivel(CLOSER, mkNivel); }
+function kpiIdx(){ const s=kpiSerie(); return Math.min(mkIdx[CLOSER][mkNivel], s.length-1); }
+function kpiActual(){ const s=kpiSerie(); return s[kpiIdx()]; }
+function kpiAnterior(){ const s=kpiSerie(); const i=kpiIdx(); return i>0 ? s[i-1] : null; }
+function clsObjLogrado(log, obj){
+  if(!obj) return "verde";
+  const pct=(log/obj)*100;
+  return pct>=100?"verde":pct>=80?"amarillo":"rojo";
+}
+function pctObjLogrado(log, obj){ return obj ? Math.round((log/obj)*100) : 0; }
+
+function embudoVentas(p){
+  if(!p) return null;
+  return {
+    etq:p.etq, sub:p.sub,
+    agendadas:p.agendadas, cualificadas:p.cualificadas, asistencias:p.asistencias, ventas:p.ventas,
+    tCualif: p.agendadas    ? Math.round((p.cualificadas/p.agendadas)*100)   : 0,
+    tShow:   p.cualificadas ? Math.round((p.asistencias/p.cualificadas)*100) : 0,
+    tCierre: p.asistencias  ? Math.round((p.ventas/p.asistencias)*100)       : 0,
+  };
+}
+/* diagnóstico del cuello de VENTAS por TENDENCIA (no asigna tareas) */
+function diagnosticoCuelloVentas(){
+  const act = embudoVentas(kpiActual());
+  const ant = embudoVentas(kpiAnterior());
+  const etapas = [
+    { k:"tCualif", etq:"Cualificación de agendas", de:"Agendadas",    a:"Cualificadas" },
+    { k:"tShow",   etq:"Asistencia (show-up)",     de:"Cualificadas", a:"Asistencias" },
+    { k:"tCierre", etq:"Cierre",                   de:"Asistencias",  a:"Ventas" },
+  ];
+  let elegido = etapas[0];
+  if(ant){
+    let worst=null, wd=1;
+    etapas.forEach(e=>{ const d=act[e.k]-ant[e.k]; if(d<wd){ wd=d; worst=e; } });
+    if(worst){ elegido=worst; }
+    else { let lo=null, lv=Infinity; etapas.forEach(e=>{ if(act[e.k]<lv){ lv=act[e.k]; lo=e; } }); elegido=lo; }
+  } else {
+    let lo=null, lv=Infinity; etapas.forEach(e=>{ if(act[e.k]<lv){ lv=act[e.k]; lo=e; } }); elegido=lo;
+  }
+  const ahora = act[elegido.k];
+  const antes = ant ? ant[elegido.k] : null;
+  const empeora = antes!=null && ahora<antes;
+  const cls = empeora ? "rojo" : (ahora<60 ? "amarillo" : "verde");
+  return { act, ant, etapas, elegido, ahora, antes, empeora, cls };
+}
+
+function renderVentas(){
+  const ci=CLOSER_INFO[CLOSER];
+  document.getElementById("mk-eyebrow").textContent = "Ventas & KPIs · "+ci.nombre;
+  if(callSel===null){ const lc=llamadasDelCloser(); callSel = lc.length?lc[0].id:null; }
+  let h = kpisPeriodoHTML() + cuelloTendenciaHTML() + llamadasFathomHTML();
+  document.getElementById("mk-body").innerHTML = h;
+  cablearVentas();
+}
+
+/* ---- KPIs por periodo: OBJETIVO vs ALCANZADO + diferencia ---- */
+function kpisPeriodoHTML(){
+  const serie = kpiSerie();
+  const i = kpiIdx();
+  const p = serie[i];
+  const ant = i>0 ? serie[i-1] : null;
+  const obj = kpiObjetivo();
+  const ticket = TICKET_MEDIO;
+  const delta = (k)=>{ if(!ant) return null; return k==='ingresos' ? (p.ventas-ant.ventas)*ticket : p[k]-ant[k]; };
+  const sub = (k)=>{
+    const d = delta(k); if(d==null) return `<div class="sub muted">primer periodo de la serie</div>`;
+    const up=d>0, flat=d===0;
+    const cls = flat?"amarillo":(up?"verde":"rojo");
+    const dtxt = k==='ingresos' ? (d>0?'+':'')+eur(d) : (d>0?'+':'')+d;
+    return `<div class="sub ${cls}">${flat?'▬':up?'▲':'▼'} ${dtxt} vs periodo anterior</div>`;
+  };
+  let segBtns="";
+  Object.keys(KPI_NIVEL_LBL).forEach(k=>{ segBtns+=`<button class="${mkNivel===k?'on':''}" data-niv="${k}">${KPI_NIVEL_LBL[k]}</button>`; });
+  const datenav = `<div class="datenav">
+      <button data-nav="-1" ${i<=0?'disabled':''} title="Periodo anterior">◀</button>
+      <div class="dlabel">${p.etq}<small>${p.sub}</small></div>
+      <button data-nav="1" ${i>=serie.length-1?'disabled':''} title="Periodo siguiente">▶</button>
+    </div>`;
+  let h = `<div class="h-eyebrow" style="margin-top:10px">🗓️ Rendimiento por periodo</div>
+    <div class="h-big" style="font-size:20px;margin-bottom:2px">KPIs de ventas (${KPI_NIVEL_LBL[mkNivel].toLowerCase()}) · ${CLOSER_INFO[CLOSER].corto}
+    <small>Periodos FIJOS inventados. Cambia de nivel y navega con ◀ ▶: los números cambian de verdad.</small></div>`;
+  h += `<div class="perbar"><div class="seg" style="margin:0">${segBtns}</div>${datenav}</div>`;
+
+  const kpiCard = (k, etq, alc, objVal, fmt)=>{
+    fmt = fmt || (v=>''+v);
+    const cls = clsObjLogrado(alc, objVal);
+    const pct = pctObjLogrado(alc, objVal);
+    const dif = alc - objVal;
+    const colvar = cls==="verde"?"var(--green)":cls==="amarillo"?"var(--amber)":"var(--red)";
+    return `<div class="mk-kpi">
+      <div class="l">${etq}</div>
+      <div class="ol-row" style="margin-top:9px"><div class="olbar"><i class="${cls}" style="width:${Math.min(pct,100)}%"></i></div></div>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;font-size:12.5px">
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--ink-2)">Alcanzado</span><b style="color:${colvar}">${fmt(alc)}</b></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--ink-2)">Objetivo</span><span>${fmt(objVal)}</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--ink-2)">Diferencia</span><b style="color:${colvar}">${dif>=0?'+':''}${fmt(dif)} · ${pct}%</b></div>
+      </div>
+      ${sub(k)}
+    </div>`;
+  };
+  h += `<div class="note">🎯 <b>Objetivo del periodo vs alcanzado</b> (${KPI_NIVEL_LBL[mkNivel].toLowerCase()}) para <b>${CLOSER_INFO[CLOSER].corto}</b>. <span style="color:var(--green)">Verde</span> cumple/supera · <span style="color:var(--amber)">ámbar</span> cerca (≥80 %) · <span style="color:var(--red)">rojo</span> por debajo.</div>`;
+  h += `<div class="mk-kpis">
+    ${kpiCard('agendadas','Agendadas (citas reservadas)', p.agendadas, obj.agendadas)}
+    ${kpiCard('cualificadas','Agendadas cualificadas', p.cualificadas, obj.cualificadas)}
+    ${kpiCard('asistencias','Asistencias (show-up)', p.asistencias, obj.asistencias)}
+    ${kpiCard('ventas','Ventas / cierres', p.ventas, obj.ventas)}
+    ${kpiCard('ingresos','💶 Facturación estimada (€)', p.ventas*ticket, obj.ventas*ticket, eur)}
+  </div>`;
+  h += `<div class="note" style="margin-top:-4px">💶 Ingresos estimados = <b>ventas × ticket medio (${eur(ticket)})</b>. Al conectar los pagos reales (Hotmart) saldrá el cobrado exacto por formato de pago.</div>`;
+  const showAlc = p.cualificadas ? Math.round((p.asistencias/p.cualificadas)*100) : 0;
+  const showCls = showAlc>=obj.showUp ? "verde" : (showAlc>=obj.showUp*0.8 ? "amarillo" : "rojo");
+  h += `<div class="note" style="margin:-2px 0 22px"><span class="ten-pill ${showCls}" style="vertical-align:middle">${showAlc>=obj.showUp?'✓':'▼'} Show-up: ${showAlc}% alcanzado vs ${obj.showUp}% objetivo (${showAlc-obj.showUp>=0?'+':''}${showAlc-obj.showUp} pts)</span></div>`;
+
+  const maxV = Math.max(...serie.map(x=>x.agendadas),1);
+  let bars="";
+  serie.forEach((x,ix)=>{
+    const isNow = ix===i;
+    bars+=`<div class="colb" data-jump="${ix}" title="${x.etq}: ${x.agendadas} agendadas · ${x.ventas} ventas">
+      <span class="vv">${x.agendadas}</span>
+      <div class="bar ${isNow?'now':''}" style="height:${Math.round((x.agendadas/maxV)*100)}%"></div>
+      <span class="ll">${x.etq.replace(' 2026','')}</span></div>`;
+  });
+  h += `<div class="card"><h3>📊 Agendadas por periodo <span class="pip">${KPI_NIVEL_LBL[mkNivel]} · clic en una barra para saltar</span></h3>
+    <div class="sparkbars">${bars}</div></div>`;
+
+  const e=embudoVentas(p);
+  h += `<div class="card"><h3>🔁 Tasas de conversión del periodo · ${p.etq}</h3>
+    ${convRow('Agendadas → Cualificadas', e.tCualif)}
+    ${convRow('Cualificadas → Asistencias', e.tShow)}
+    ${convRow('Asistencias → Ventas', e.tCierre)}
+  </div>`;
+  return h;
+}
+function convRow(lbl, pct){
+  const cls=pct>=70?"verde":pct>=50?"amarillo":"rojo";
+  return `<div class="goalrow2"><div class="gl">${lbl}</div><div class="gbar"><i class="${cls}" style="width:${Math.min(pct,100)}%"></i></div><div class="gv"><b>${pct}%</b></div></div>`;
+}
+
+/* ---- CUELLO DE BOTELLA POR TENDENCIA (diagnóstico) ---- */
+function cuelloTendenciaHTML(){
+  const d = diagnosticoCuelloVentas();
+  const a=d.act, p=d.ant;
+  const base = a.agendadas || 1;
+  const etapasFunnel = [
+    { etq:"Agendadas",    sub:"citas reservadas",      val:a.agendadas,    tasa:null,      kt:null },
+    { etq:"Cualificadas", sub:"pasan filtro / validación", val:a.cualificadas, tasa:a.tCualif, kt:"tCualif" },
+    { etq:"Asistencias",  sub:"show-up en la llamada", val:a.asistencias,  tasa:a.tShow,   kt:"tShow" },
+    { etq:"Ventas",       sub:"cierres / pagos",       val:a.ventas,       tasa:a.tCierre, kt:"tCierre" },
+  ];
+  let rows="";
+  etapasFunnel.forEach(e=>{
+    const w = Math.max(Math.round((e.val/base)*100), 7);
+    const barCls = e.tasa==null ? "verde" : (e.tasa>=70?"verde":e.tasa>=50?"amarillo":"rojo");
+    let conv="";
+    if(e.tasa!=null){
+      const antes = p ? p[e.kt] : null;
+      let tend="";
+      if(antes!=null){
+        const dd=e.tasa-antes;
+        const tc = dd>0?"up":dd<0?"down":"flat";
+        tend = `<span class="ct ${tc}">${dd>0?'▲':dd<0?'▼':'▬'} ${dd>0?'+':''}${dd} pts vs ${p.etq}</span>`;
+      } else tend = `<span class="ct flat">sin comparativa</span>`;
+      conv = `<div class="conv"><span class="cv">${e.tasa}% conv.</span>${tend}</div>`;
+    } else {
+      conv = `<div class="conv"><span class="cv">100%</span><span class="ct flat">entrada del embudo</span></div>`;
+    }
+    rows+=`<div class="tstage">
+      <div class="tsl">${e.etq}<small>${e.sub}</small></div>
+      <div class="tsbarwrap"><div class="tsbar"><i class="${barCls}" style="width:${w}%">${e.val}</i></div>${conv}</div>
+    </div>`;
+  });
+  const e = d.elegido;
+  let diag;
+  if(d.empeora){
+    diag = `<b>Cuello en ${e.etq.toLowerCase()}</b>: ${d.ahora}% este periodo vs ${d.antes}% el periodo anterior ▼ → la tendencia EMPEORA. ${
+      e.k==="tShow" ? "El show-up está cayendo: revisar recordatorios, confirmaciones y la cualificación previa." :
+      e.k==="tCierre" ? "El cierre cae aunque asisten: revisar el guión de cierre, manejo de objeciones y oferta de pago." :
+      "La cualificación cae: revisar la calidad del tráfico/origen y el filtro de validación."}`;
+  } else {
+    diag = `Etapa más débil: <b>${e.etq.toLowerCase()}</b> (${d.ahora}% de conversión)${d.antes!=null?`, estable o mejor que el periodo anterior (${d.antes}%)`:''}. No hay deterioro de tendencia; vigilar sin sobrerreaccionar.`;
+  }
+  const ndh = d.empeora ? "📉 Cuello por tendencia · EMPEORA" : (d.cls==="amarillo" ? "⚠️ Etapa débil · estable" : "✅ Embudo sano por tendencia");
+  return `<div class="card" style="margin-top:8px"><h3>🔎 Cuello de botella de ventas · diagnóstico por tendencia <span class="pip">analítico, no operativo</span></h3>
+    <div class="note">Compara las tasas de conversión del embudo de <b>${kpiActual().etq}</b> con el periodo anterior${p?` (<b>${p.etq}</b>)`:''}, para <b>${CLOSER_INFO[CLOSER].corto}</b>. Esto <b>NO</b> es una tarea: es un diagnóstico de QUÉ etapa frena y si empeora como tendencia.</div>
+    <div class="tfunnel">${rows}</div>
+    <div class="neckdiag ${d.cls}">
+      <div class="ndh">${ndh}</div>
+      <div class="ndm">${diag}</div>
+    </div>
+  </div>`;
+}
+
+/* ---- REVISIÓN DE LLAMADAS (Fathom) · conectada a los leads existentes ---- */
+const CALL_RES_LBL = { ganada:"Ganada", perdida:"Perdida", seguimiento:"Seguimiento", noshow:"No-show" };
+function callResDe(l){
+  if(l.callRes) return l.callRes;
+  if(l.estado==="ganado") return "ganada";
+  if(l.estado==="nocompra") return "perdida";
+  if(l.estado==="noshow") return "noshow";
+  if(l.estado==="realizada") return "seguimiento";
+  return "seguimiento";
+}
+/* llamadas del closer activo = sus leads que ya tuvieron llamada (con resumen Fathom o resultado) */
+function llamadasDelCloser(){
+  return misLeads().filter(l=> l.resumen || l.callRes || ["ganado","nocompra","noshow","realizada"].includes(l.estado))
+    .sort((a,b)=> a.llamada<b.llamada?1:-1);
+}
+function llamadasFathomHTML(){
+  const lc = llamadasDelCloser();
+  if(!lc.length){
+    return `<div class="card" style="margin-top:8px"><h3>📞 Revisión de llamadas (Fathom) <span class="pip">${CLOSER_INFO[CLOSER].corto}</span></h3>
+      <div class="empty"><div class="em">🎙️</div>Este closer aún no tiene llamadas realizadas para revisar.</div></div>`;
+  }
+  if(callSel===null || !lc.find(l=>l.id===callSel)) callSel=lc[0].id;
+  let list="";
+  lc.forEach(l=>{
+    const r=callResDe(l);
+    const sel = l.id===callSel?"sel":"";
+    list+=`<button class="callitem ${r} ${sel}" data-call="${l.id}">
+      <div class="cin">${l.nombre}</div>
+      <div class="cisub"><span class="res-pill ${r}">${CALL_RES_LBL[r].toUpperCase()}</span> ${fmtCorta(l.llamada)} · ${l.callDur||'—'}</div>
+    </button>`;
+  });
+  return `<div class="card" style="margin-top:8px"><h3>📞 Revisión de llamadas de ${CLOSER_INFO[CLOSER].corto} <span class="pip">Fuente: Fathom (conexión real más adelante)</span></h3>
+    <div class="note">Cada llamada está ligada a un <b>lead</b> del pipeline. Elige una para ver su desempeño (resultado, duración, momento clave), el resumen y tus notas.</div>
+    <div class="callsplit">
+      <div class="calllist">${list}</div>
+      <div class="callpanel" id="callPanel">${callPanelHTML(callSel)}</div>
+    </div>
+  </div>`;
+}
+function callPanelHTML(id){
+  const l = L(id); if(!l) return "";
+  const r = callResDe(l);
+  const nota = getNota("call-"+l.id);
+  const colcls = r==="ganada"?"green":r==="perdida"||r==="noshow"?"red":"amber";
+  let bloque = `<div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap">
+      <h3 style="margin:0;font-size:15px">${l.nombre} · ${l.objetivo}</h3>
+      <span class="res-pill ${r}" style="margin-left:auto">${CALL_RES_LBL[r]}</span>
+    </div>
+    <div class="dm" style="color:var(--muted);font-size:12.5px;margin-top:6px">🎙️ Llamada ${fmtFecha(l.llamada)} · ${l.callDur||'—'} · closer: ${CLOSER_INFO[l.closer].corto}</div>
+    <div class="dsec">Desempeño</div>
+    <div class="kvgrid">
+      <div class="kv"><div class="k">Resultado</div><div class="v ${colcls}">${CALL_RES_LBL[r]}</div></div>
+      <div class="kv"><div class="k">Duración</div><div class="v">${l.callDur||'—'}</div></div>
+      <div class="kv"><div class="k">Origen del lead</div><div class="v" style="font-size:12.5px">${l.origen}</div></div>
+      <div class="kv"><div class="k">Presupuesto</div><div class="v" style="font-size:12.5px">${l.presupuesto}</div></div>
+    </div>`;
+  if(l.momentoClave){
+    bloque += `<div class="dsec">Momento clave</div><div class="keymoment">${l.momentoClave}</div>`;
+  }
+  if(l.resumen){
+    bloque += `<div class="dsec">Resumen de la llamada (Fathom)</div>
+      <div class="callout"><ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px">${l.resumen.map(x=>`<li>${x}</li>`).join("")}</ul></div>`;
+  }
+  bloque += `<div class="dsec">📝 Notas de seguimiento <span style="color:var(--faint);font-weight:500;text-transform:none;letter-spacing:0">· se guardan en este navegador</span></div>
+    <textarea class="notes-ta" id="callNotes" placeholder="Escribe aquí el seguimiento de esta llamada (objeciones, próximos pasos, recordatorios)...">${escapeHtml(nota)}</textarea>
+    <div class="notes-bar">
+      <button class="btn primary sm" id="saveCallNote">💾 Guardar notas</button>
+      <span class="savedhint" id="callSaved"></span>
+    </div>`;
+  return bloque;
+}
+function pintarCallPanel(){
+  const panel = document.getElementById("callPanel");
+  if(panel) panel.innerHTML = callPanelHTML(callSel);
+  document.querySelectorAll(".callitem").forEach(b=>b.classList.toggle("sel", b.dataset.call===callSel));
+  cablearCallNotas();
+}
+function guardarBorradorCall(){
+  const box=document.getElementById("callNotes");
+  if(box && callSel) guardarNota("call-"+callSel, box.value);
+}
+function cablearCallNotas(){
+  const save=document.getElementById("saveCallNote");
+  const box=document.getElementById("callNotes");
+  if(box){ box.oninput=()=>guardarNota("call-"+callSel, box.value); box.onblur=()=>guardarNota("call-"+callSel, box.value); }
+  if(save) save.onclick=()=>{
+    const dest=guardarNota("call-"+callSel, box.value);
+    const hint=document.getElementById("callSaved");
+    hint.textContent = dest==="localStorage" ? "✓ Guardado (persiste al recargar)" : "✓ Guardado en memoria";
+    hint.classList.add("show"); toast("Notas de la llamada guardadas");
+    setTimeout(()=>hint.classList.remove("show"),2400);
+  };
+}
+function cablearVentas(){
+  document.querySelectorAll(".perbar .seg button[data-niv]").forEach(b=>b.onclick=()=>{ guardarBorradorCall(); mkNivel=b.dataset.niv; renderVentas(); });
+  document.querySelectorAll(".datenav button[data-nav]").forEach(b=>b.onclick=()=>{
+    guardarBorradorCall();
+    const serie=kpiSerie();
+    mkIdx[CLOSER][mkNivel]=Math.max(0, Math.min(serie.length-1, kpiIdx() + (+b.dataset.nav)));
+    renderVentas();
+  });
+  document.querySelectorAll(".sparkbars .colb[data-jump]").forEach(b=>b.onclick=()=>{ guardarBorradorCall(); mkIdx[CLOSER][mkNivel]=+b.dataset.jump; renderVentas(); });
+  document.querySelectorAll(".callitem[data-call]").forEach(b=>b.onclick=()=>{ guardarBorradorCall(); callSel=b.dataset.call; pintarCallPanel(); });
+  cablearCallNotas();
+}
+
+/* ===================== GUÍA ===================== */
+const PASOS=[
+  {n:"1", ico:"📥", t:"Llega un lead nuevo", d:"Cuando alguien agenda por Calendly aparece en <b>Nuevo / Agendado</b>. Tienes ya su email, teléfono, cuándo es la llamada y las <b>respuestas del formulario</b> (objetivo, presupuesto, por qué ahora). Todo en su tarjeta, sin Excel aparte."},
+  {n:"2", ico:"✅", t:"Valida (¿cualifica?)", d:"Lee sus respuestas y decide si encaja. Pulsa el check <b>Valida</b> en la tarjeta. El lead se mueve solo a <b>Validado</b> y desaparece de tu lista de 'por validar'."},
+  {n:"3", ico:"📌", t:"Confirma (¿asistirá?)", d:"Antes de la llamada confirma que va a presentarse. Pulsa <b>Confirma</b>. Pasa a <b>Confirmado</b> y lo verás en 'Hoy' el día de la llamada."},
+  {n:"4", ico:"📞", t:"Haz la llamada", d:"Tras hablar, pulsa <b>Llamada hecha</b>. Si no apareció, marca <b>No-show</b>. La llamada pasa a la zona de <b>Pasadas · pendientes de registrar resultado</b>. Si te pidió moverla, usa <b>Reagendar</b>."},
+  {n:"5", ico:"💸", t:"Registra el resultado", d:"Si vende: <b>Registrar pago</b> → eliges el formato real de Hotmart (Anual 1.800 €, Semestral 1.200 €, Solo nutrición o Reserva), copias el <b>🔗 enlace de pago</b> y se calcula el <b>cash collected</b> + el calendario de cobros. Si no: <b>No compra</b>. El overview y los KPIs se actualizan al instante."},
+  {n:"6", ico:"📈", t:"Mira tus Ventas & KPIs", d:"En <b>Ventas &amp; KPIs</b> ves tu <b>objetivo vs alcanzado</b> por día/semana/mes, el <b>cuello de botella por tendencia</b> del embudo (qué etapa frena) y la <b>revisión de tus llamadas</b> (Fathom) con resumen y notas. Todo filtrado por ti."},
+];
+function renderGuia(){
+  const flow=[
+    {t:"Nuevo",c:"var(--blue)"},{t:"Validado",c:"#A78BFA"},{t:"Confirmado",c:"var(--brand)"},{t:"Llamada",c:"var(--amber)"},{t:"Pago / resultado",c:"var(--green)"},
+  ];
+  let html=`<div class="guide-callout"><span class="gci">🎯</span><b>La regla de oro:</b> arriba a la derecha eliges la <b>vista</b> con 3 opciones: <b>General</b> (el equipo entero: Pascu + Álvaro juntos), <b>Pascu</b> o <b>Álvaro</b> (solo ese closer). En <b>General</b> ves los totales del equipo y quién va por delante; en Pascu/Álvaro ves solo sus leads y sus KPIs. Avanzas cada lead de izquierda a derecha. Cuando no sepas qué hacer, mira <b>Mi panel → Hoy</b> y <b>Pendiente de completar</b>.</div>`;
+  html+=`<div class="guide-flow">`;
+  flow.forEach((f,i)=>{
+    html+=`<span class="gfstep"><span class="gfd" style="background:${f.c}"></span>${f.t}</span>`;
+    if(i<flow.length-1) html+=`<span class="gfarrow">→</span>`;
+  });
+  html+=`</div>`;
+  html+=PASOS.map(p=>`<div class="guide-step"><div class="gn">${p.ico}</div><div class="gx"><div class="gt">Paso ${p.n} · ${p.t}</div><div class="gd">${p.d}</div></div></div>`).join("");
+  html+=`<div class="guide-callout" style="margin-top:26px"><span class="gci">💸</span><b>Formatos reales de Hotmart:</b> <b>Anual</b> 1.800 € (1 pago, o fraccionado 2×900 / 3×600) · <b>Semestral</b> 1.200 € (1 pago o 2×600) · <b>Solo nutrición</b> 1.500 € (o 750+750, <span class="tbc">enlace por confirmar</span>) · <b>Reserva</b> 100–200 €. Cada uno trae su <b>🔗 enlace de pago</b> para copiar al portapapeles.</div>`;
+  html+=`<div class="guide-callout"><span class="gci">📊</span><b>Cash collected y comisión, en cristiano:</b> <b>Cobrado</b> = el dinero que YA entró (cuotas vencidas). <b>Proyectado</b> = el total que firmó el cliente, aunque pague a plazos. Ejemplo Anual fraccionado: 1.800 € en 2 cuotas → hoy cobras 900 €, proyectado 1.800 €, quedan 900 € a 30 días. Tu <b>comisión (10%)</b> se devenga SOLO sobre lo <b>COBRADO</b>, no sobre lo proyectado: crece a medida que entra cada cuota.</div>`;
+  document.getElementById("guide-body").innerHTML=html;
+  document.getElementById("guide-modal-body").innerHTML=PASOS.map(p=>`<div class="guide-step"><div class="gn">${p.ico}</div><div class="gx"><div class="gt">Paso ${p.n} · ${p.t}</div><div class="gd">${p.d}</div></div></div>`).join("");
+}
+function openGuide(){ renderGuia(); document.getElementById("guide-modal").classList.add("open"); }
+function closeGuide(){ document.getElementById("guide-modal").classList.remove("open"); }
+
+/* ===================== NAV / ROUTER ===================== */
+const TITULOS={overview:["Mi panel","Resumen de cierre"],pipeline:["Pipeline","Mueve tus leads"],agenda:["Agenda","Próximas y pasadas"],ventas:["Ventas & KPIs","Analítica del closer"],guia:["¿Cómo uso esto?","Guía rápida"]};
+function go(v){ VIEW=v; renderActive(); }
+function renderActive(){
+  document.querySelectorAll(".view").forEach(el=>el.classList.remove("active"));
+  document.getElementById("view-"+VIEW).classList.add("active");
+  document.querySelectorAll("#nav a").forEach(a=>a.classList.toggle("active", a.dataset.view===VIEW));
+  document.getElementById("page-title").childNodes[0].nodeValue=TITULOS[VIEW][0];
+  document.getElementById("page-sub").textContent=TITULOS[VIEW][1];
+  if(VIEW==="overview") renderOverview();
+  if(VIEW==="pipeline") renderPipeline();
+  if(VIEW==="agenda") renderAgenda();
+  if(VIEW==="ventas") renderVentas();
+  if(VIEW==="guia") renderGuia();
+}
+function updateNav(){
+  const hoy=tareasHoy().length, pend=tareasPendientes().length;
+  const activos=misLeads().filter(l=>ESTADOS[l.estado].grupo==="activo").length;
+  const futuras=misLeads().filter(l=>esFuturo(l.llamada)&&ESTADOS[l.estado].grupo==="activo").length;
+  const pasPend=misLeads().filter(l=>l.estado==="realizada").length;
+  document.getElementById("nc-hoy").textContent=hoy;
+  document.getElementById("nc-pipe").textContent=activos;
+  document.getElementById("nc-agenda").textContent=futuras+pasPend;
+}
+function rerender(){ renderActive(); updateNav(); }
+
+/* ===================== TOAST ===================== */
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById("toast");
+  document.getElementById("toast-txt").textContent=msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove("show"),2200);
+}
+
+/* ===================== INIT ===================== */
+document.getElementById("nav").addEventListener("click",e=>{
+  const a=e.target.closest("a"); if(!a) return;
+  VIEW=a.dataset.view; renderActive();
+});
+document.getElementById("closer-seg").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  CLOSER=b.dataset.closer;
+  document.querySelectorAll("#closer-seg button").forEach(x=>x.classList.toggle("on",x.dataset.closer===CLOSER));
+  closeDrawer();
+  callSel=null; // recalcular la llamada seleccionada para el nuevo closer
+  rerender();
+  toast(esGeneral() ? "Vista General · Equipo (todos los closers)" : "Viendo datos de "+CLOSER_INFO[CLOSER].corto);
+});
+document.getElementById("pipe-filter").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  PIPE_FILTER=b.dataset.f;
+  document.querySelectorAll("#pipe-filter button").forEach(x=>x.classList.toggle("on",x.dataset.f===PIPE_FILTER));
+  renderPipeline();
+});
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ closeDrawer(); closeGuide(); } });
+
+rerender();
+</script>
+</body>
+</html>
