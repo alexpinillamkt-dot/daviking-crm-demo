@@ -170,6 +170,10 @@
   .btn.red{background:var(--red-bg);border-color:var(--red-line);color:var(--red)}
   .btn.amber{background:var(--amber-bg);border-color:var(--amber-line);color:var(--amber)}
   .btn.blue{background:var(--blue-bg);border-color:var(--blue-line);color:var(--blue)}
+  .btn.wa{background:#25D366;border-color:transparent;color:#06281a;font-weight:700}
+  .segbox{background:var(--amber-bg);border:1px solid var(--amber-line);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--ink-2)}
+  .segbtns{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+  .dwa-row{margin:10px 0 2px}
   .btn.sm{padding:6px 10px;font-size:11.5px}
   .btn.block{width:100%;justify-content:center}
   .btn:disabled{opacity:.4;cursor:not-allowed}
@@ -754,12 +758,13 @@ const ESTADOS = {
   validado:   {t:"Validado (cualifica)", color:"#A78BFA", dot:"#A78BFA", grupo:"activo"},
   confirmado: {t:"Confirmado", color:"#34D399", dot:"var(--brand)", grupo:"activo"},
   realizada:  {t:"Llamada realizada", color:"#F0B45A", dot:"var(--amber)", grupo:"activo"},
+  seguimiento:{t:"Seguimiento", color:"#F0B45A", dot:"var(--amber)", grupo:"activo"},
   ganado:     {t:"Pago hecho · Ganado", color:"#43D6A0", dot:"var(--green)", grupo:"cerrado"},
-  nocompra:   {t:"No compra", color:"#F4707E", dot:"var(--red)", grupo:"cerrado"},
+  nocompra:   {t:"No compra · perdido", color:"#F4707E", dot:"var(--red)", grupo:"cerrado"},
   noshow:     {t:"No-show", color:"#F4707E", dot:"var(--red)", grupo:"cerrado"},
   reagendado: {t:"Reagendado", color:"#7C8499", dot:"var(--faint)", grupo:"activo"},
 };
-const ORDEN_KANBAN = ["nuevo","validado","confirmado","realizada","ganado","nocompra","noshow","reagendado"];
+const ORDEN_KANBAN = ["nuevo","validado","confirmado","realizada","seguimiento","ganado","nocompra","noshow","reagendado"];
 
 /* ===================== DATOS INVENTADOS · LEADS ===================== */
 const LEADS = [
@@ -831,7 +836,7 @@ const LEADS = [
      {w:"Andrea", c:"Sí, esta tarde te confirmo casi seguro."},
    ]},
   {id:"l5", closer:"pascu", nombre:"Javier Ruiz", email:"javi.ruiz@gmail.com", tel:"+34 633 442 109",
-   estado:"realizada", agendado:"2026-05-20", llamada:"2026-05-27", validada:true, confirmada:true, asistio:true,
+   estado:"seguimiento", agendado:"2026-05-20", llamada:"2026-05-27", validada:true, confirmada:true, asistio:true, fechaSeguimiento:"2026-05-29",
    objetivo:"Perder barriga", nivel:"Sedentario", presupuesto:"Justo, mirando precio", origen:"TikTok",
    dolor:"Trabaja 10h, come fuera todos los días. Muy poca disponibilidad y dudas de presupuesto.",
    form:[
@@ -970,7 +975,7 @@ const LEADS = [
      {q:"Del 1 al 10, ¿compromiso?", a:"8"},
    ]},
   {id:"a2", closer:"alvaro", nombre:"Roberto Díaz", email:"roberto.diaz@gmail.com", tel:"+34 655 110 887",
-   estado:"realizada", agendado:"2026-05-22", llamada:"2026-05-28", validada:true, confirmada:true, asistio:true,
+   estado:"seguimiento", agendado:"2026-05-22", llamada:"2026-05-28", validada:true, confirmada:true, asistio:true, fechaSeguimiento:"2026-05-26",
    objetivo:"Ganar músculo", nivel:"Intermedio", presupuesto:"Alto", origen:"Recomendación",
    dolor:"Quiere subir 8 kg de músculo limpio. Decidido.",
    form:[
@@ -1173,6 +1178,7 @@ function tareasHoy(){
     if(l.llamada===HOY && (l.estado==="confirmado")){ out.push({t:"Llamada HOY con "+l.nombre, m:"Confirmada · "+l.objetivo+cs, ico:"📞", cls:"green", id:l.id}); }
     if(esFuturo(l.llamada) && !l.validada && l.estado!=="reagendado"){ out.push({t:"Validar a "+l.nombre, m:"¿Cualifica? · llamada "+etiquetaCuando(l.llamada,"")+cs, ico:"✅", cls:"blue", id:l.id}); }
     if(esFuturo(l.llamada) && l.validada && !l.confirmada && l.estado!=="reagendado"){ out.push({t:"Confirmar asistencia de "+l.nombre, m:"Llamada "+etiquetaCuando(l.llamada,"")+cs, ico:"📌", cls:"amber", id:l.id}); }
+    if(l.estado==="seguimiento" && l.fechaSeguimiento===HOY){ out.push({t:"🔔 Seguimiento HOY: "+l.nombre, m:"Toca contactar para cerrar"+cs, ico:"🔔", cls:"amber", id:l.id}); }
   });
   return out;
 }
@@ -1182,6 +1188,7 @@ function tareasPendientes(){
     const cs = esGeneral() ? " · 👤 "+CLOSER_INFO[l.closer].corto : "";
     if(l.estado==="realizada"){ out.push({t:"Registrar resultado de "+l.nombre, m:"Llamada del "+fmtCorta(l.llamada)+" · pago / no compra / no-show"+cs, ico:"📝", cls:"red", id:l.id}); }
     if(l.estado==="reagendado"){ out.push({t:"Reconfirmar a "+l.nombre, m:"Reagendado a "+etiquetaCuando(l.llamada,"")+cs, ico:"🔄", cls:"amber", id:l.id}); }
+    if(l.estado==="seguimiento" && l.fechaSeguimiento && esPasado(l.fechaSeguimiento)){ out.push({t:"Seguimiento VENCIDO: "+l.nombre, m:"Vencía "+fmtCorta(l.fechaSeguimiento)+" · contactar ya"+cs, ico:"🔴", cls:"red", id:l.id}); }
   });
   return out;
 }
@@ -1376,10 +1383,18 @@ function accionesEstado(l){
   else if(l.estado==="confirmado") b.push(`<button class="btn sm amber" onclick="event.stopPropagation();setEstado('${l.id}','realizada')">Llamada hecha →</button>`);
   else if(l.estado==="realizada"){
     b.push(`<button class="btn sm primary" onclick="event.stopPropagation();openLead('${l.id}',true)">💸 Registrar pago</button>`);
-    b.push(`<button class="btn sm red" onclick="event.stopPropagation();setEstado('${l.id}','nocompra')">No compra</button>`);
+    b.push(`<button class="btn sm amber" onclick="event.stopPropagation();setEstado('${l.id}','seguimiento')">No compra · seguimiento</button>`);
+    b.push(`<button class="btn sm red" onclick="event.stopPropagation();setEstado('${l.id}','nocompra')">No compra · perdido</button>`);
     b.push(`<button class="btn sm" onclick="event.stopPropagation();setEstado('${l.id}','reagendado')">Reagendar</button>`);
+  } else if(l.estado==="seguimiento"){
+    b.push(`<button class="btn sm primary" onclick="event.stopPropagation();openLead('${l.id}',true)">💸 Registrar pago</button>`);
+    b.push(`<button class="btn sm amber" onclick="event.stopPropagation();reprogramarSeguimiento('${l.id}')">🔔 Recordatorio +2 sem</button>`);
+    b.push(`<button class="btn sm red" onclick="event.stopPropagation();setEstado('${l.id}','nocompra')">Marcar perdido</button>`);
   } else if(l.estado==="reagendado"){
     b.push(`<button class="btn sm green" onclick="event.stopPropagation();setEstado('${l.id}','confirmado')">Confirmar →</button>`);
+  }
+  if(ESTADOS[l.estado].grupo==="activo"){
+    b.push(`<button class="btn sm wa" onclick="event.stopPropagation();waLead('${l.id}')">💬 WhatsApp</button>`);
   }
   if(!b.length) return "";
   return `<div class="lactions">${b.join("")}</div>`;
@@ -1410,12 +1425,13 @@ function setEstado(id, nuevo){
   if(nuevo==="realizada"){ patch.asistio=true; if(!L(id).resultado) patch.resultado="pendiente"; }
   if(nuevo==="noshow"){ patch.asistio=false; patch.resultado="noshow"; }
   if(nuevo==="nocompra"){ patch.resultado="nocompra"; }
+  if(nuevo==="seguimiento"){ patch.asistio=true; patch.validada=true; patch.resultado="seguimiento"; patch.callRes="seguimiento"; if(!L(id).fechaSeguimiento) patch.fechaSeguimiento=fechaConOffset(HOY,14); }
   setLead(id, patch);
   toast(estadoToast(nuevo));
   rerender();
 }
 function estadoToast(e){
-  const m={validado:"Lead validado ✓",confirmado:"Asistencia confirmada ✓",realizada:"Llamada marcada como realizada",nocompra:"Marcado como No compra",noshow:"Marcado como No-show",ganado:"¡Venta registrada! 🏆",reagendado:"Lead reagendado"};
+  const m={validado:"Lead validado ✓",confirmado:"Asistencia confirmada ✓",realizada:"Llamada marcada como realizada",nocompra:"Marcado como No compra · perdido",noshow:"Marcado como No-show",ganado:"¡Venta registrada! 🏆",reagendado:"Lead reagendado",seguimiento:"En seguimiento · recordatorio en 2 semanas 🔔"};
   return m[e]||"Actualizado";
 }
 function toggleCheck(id, tipo){
@@ -1474,7 +1490,22 @@ function drawerBody(l){
       <div class="kv"><div class="k">Llamada</div><div class="v">${fmtFecha(l.llamada)} (${diaSemana(l.llamada).slice(0,3)})</div></div>
       <div class="kv"><div class="k">Presupuesto declarado</div><div class="v">${l.presupuesto}</div></div>
       <div class="kv"><div class="k">Nivel / contexto</div><div class="v">${l.nivel}</div></div>
-    </div>`;
+    </div>
+    <div class="dwa-row"><button class="btn wa" onclick="waLead('${l.id}')">💬 Recordar / escribir por WhatsApp</button></div>`;
+
+  if(l.estado==="seguimiento"){
+    const venc = l.fechaSeguimiento && esPasado(l.fechaSeguimiento);
+    html += `<div class="dsec"><span class="si">🔔</span>Recordatorio de seguimiento</div>
+      <div class="segbox">
+        Próximo contacto: <b>${l.fechaSeguimiento?fmtFecha(l.fechaSeguimiento):'sin fecha'}</b> ${venc?'<span style="color:var(--red);font-weight:700">· vencido, contactar ya</span>':''}
+        <div class="segbtns">
+          <button class="btn sm" onclick="setSeguimiento('${l.id}',7)">+1 semana</button>
+          <button class="btn sm" onclick="setSeguimiento('${l.id}',14)">+2 semanas</button>
+          <button class="btn sm" onclick="setSeguimiento('${l.id}',30)">+1 mes</button>
+          <button class="btn sm" onclick="setSeguimientoCustom('${l.id}')">Fecha…</button>
+        </div>
+      </div>`;
+  }
 
   html += `<div class="dsec"><span class="si">🧭</span>Estado del lead</div>${timelineHTML(l)}`;
 
@@ -1567,13 +1598,48 @@ function drawerEstadoBotones(l){
     {k:"validado",t:"Validado",cls:"blue"},
     {k:"confirmado",t:"Confirmado",cls:"green"},
     {k:"realizada",t:"Llamada hecha",cls:"amber"},
-    {k:"nocompra",t:"No compra",cls:"red"},
+    {k:"seguimiento",t:"Seguimiento",cls:"amber"},
+    {k:"nocompra",t:"No compra · perdido",cls:"red"},
     {k:"noshow",t:"No-show",cls:"red"},
     {k:"reagendado",t:"Reagendar",cls:""},
   ];
   return `<div class="dactions">${all.filter(b=>b.k!==l.estado).map(b=>
     `<button class="btn ${b.cls}" onclick="setEstado('${l.id}','${b.k}');refreshDrawer()">${b.t}</button>`).join("")}</div>`;
 }
+
+/* ===================== WHATSAPP + RECORDATORIOS DE SEGUIMIENTO ===================== */
+function waMsg(l){
+  const firma = l.closer==='pascu' ? 'Pascual' : (CLOSER_INFO[l.closer] ? CLOSER_INFO[l.closer].corto : 'el equipo');
+  const cuando = l.llamada===HOY ? 'hoy' : (esFuturo(l.llamada) ? etiquetaCuando(l.llamada,'') : 'en la fecha acordada');
+  return 'Hola '+l.nombre+' 👋\n'+
+    'Soy '+firma+', del equipo de Daviking. Te escribo para confirmar tu asistencia a la reunión que tenemos '+cuando+'.\n'+
+    'La sesión será a través de Zoom, así que si aún no tienes la app instalada, te pido que la descargues antes de la llamada para que podamos empezar sin contratiempos. Puedes hacerlo desde zoom.us o desde la tienda de tu dispositivo.\n'+
+    'También te recomendamos que estés en un lugar tranquilo donde puedas prestar toda tu atención durante la sesión.\n'+
+    'Si por cualquier motivo no pudieras asistir, te agradeceríamos que nos lo comunicaras cuanto antes para poder liberar el hueco.\n'+
+    '¡Nos vemos! '+firma+' | Equipo Daviking';
+}
+function waLead(id){
+  const l=L(id);
+  const tel=(l.tel||'').replace(/[^0-9]/g,'');
+  if(!tel){ toast('Este lead no tiene teléfono'); return; }
+  window.open('https://wa.me/'+tel+'?text='+encodeURIComponent(waMsg(l)),'_blank');
+  toast('Abriendo WhatsApp con el mensaje listo 💬');
+}
+function setSeguimiento(id, days){
+  const fecha=fechaConOffset(HOY,days);
+  setLead(id,{estado:'seguimiento',resultado:'seguimiento',callRes:'seguimiento',asistio:true,validada:true,fechaSeguimiento:fecha});
+  toast('🔔 Recordatorio fijado para el '+fmtCorta(fecha));
+  rerenderBackground(); refreshDrawer();
+}
+function setSeguimientoCustom(id){
+  const v=window.prompt('Fecha del próximo seguimiento (AAAA-MM-DD):', fechaConOffset(HOY,14));
+  if(!v) return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(v)){ toast('Formato no válido. Usa AAAA-MM-DD'); return; }
+  setLead(id,{estado:'seguimiento',resultado:'seguimiento',fechaSeguimiento:v});
+  toast('🔔 Seguimiento fijado para el '+fmtCorta(v));
+  rerenderBackground(); refreshDrawer();
+}
+function reprogramarSeguimiento(id){ setSeguimiento(id,14); }
 
 /* ----- registro de pago: selector con enlaces Hotmart ----- */
 function pagoSelectorHTML(l){
