@@ -767,7 +767,7 @@ const ESTADOS = {
 const ORDEN_KANBAN = ["nuevo","validado","confirmado","realizada","seguimiento","ganado","nocompra","noshow","reagendado"];
 
 /* ===================== DATOS INVENTADOS · LEADS ===================== */
-const LEADS = [
+let LEADS = [
   {id:"l1", closer:"pascu", nombre:"Marcos Llorente", email:"marcos.llorente@gmail.com", tel:"+34 666 214 880",
    estado:"nuevo", agendado:"2026-05-27", llamada:"2026-05-30", validada:false, confirmada:false, asistio:null,
    objetivo:"Bajar 12 kg y recomponer", nivel:"Entrena 2x/sem, sin pauta", presupuesto:"Hasta 2.000 €", origen:"Instagram (reel sentadilla)",
@@ -1107,10 +1107,67 @@ try{ STORE = JSON.parse(localStorage.getItem(LS_KEY) || "{}"); }catch(e){ STORE 
 function saveStore(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(STORE)); }catch(e){} }
 function leadStore(id){ if(!STORE[id]) STORE[id]={}; return STORE[id]; }
 function L(id){
-  const base = LEADS.find(x=>x.id===id);
-  return Object.assign({}, base, STORE[id]||{});
+  const base = LEADS.find(x=>x.id===id) || {};
+  const det = (base.contactId && GHL_DETALLE[base.contactId]) || {};
+  return Object.assign({}, base, det, STORE[id]||{});
 }
 function setLead(id, patch){ Object.assign(leadStore(id), patch); saveStore(); }
+
+/* ===================== CONEXIÓN A GHL (FASE 1: SOLO LECTURA) ===================== */
+/* Si GHL.url está puesto, el CRM lee los leads REALES del Worker puente.
+   Si no hay conexión, se queda con los datos de demostración de abajo. */
+const GHL = { url:"https://daviking-ghl-bridge.alexpinillamkt.workers.dev", key:"" };
+let GHL_DETALLE = {};   // caché de fichas (/lead) por contactId
+function mapGhlLead(g){
+  return { id:g.id, contactId:g.contactId||"", closer:g.closer||"pascu", nombre:g.nombre||"Sin nombre",
+    email:g.email||"", tel:g.tel||"", estado:g.estado||"nuevo",
+    agendado:"", llamada:"", validada:false, confirmada:false, asistio:null,
+    objetivo:"", nivel:"", presupuesto:"", origen:"GHL", dolor:"", form:[],
+    formatoPago:null, fechaSeguimiento:"", valor:g.valor||0, _ghl:true };
+}
+async function conectarGHL(){
+  if(!GHL.url) return;
+  try{
+    const r = await fetch(GHL.url+"/leads?key="+encodeURIComponent(GHL.key));
+    const data = await r.json();
+    if(data && Array.isArray(data.leads) && data.leads.length){
+      LEADS = data.leads.map(mapGhlLead);
+      rerender();
+      try{ if(typeof toast==="function") toast("🟢 Conectado a GHL · "+data.leads.length+" leads reales (solo lectura)"); }catch(e){}
+    }
+  }catch(e){ try{ if(typeof toast==="function") toast("⚪ Sin conexión a GHL · mostrando datos de demo"); }catch(_){} }
+}
+async function enriquecerLead(cid){
+  try{
+    const r = await fetch(GHL.url+"/lead?key="+encodeURIComponent(GHL.key)+"&contactId="+encodeURIComponent(cid));
+    const d = await r.json();
+    GHL_DETALLE[cid] = { objetivo:d.objetivo||"", dolor:d.dolor||"", presupuesto:d.presupuesto||"",
+      nivel:d.situacion||"", form:Array.isArray(d.form)?d.form:[] };
+    if(openLeadId){ const b=LEADS.find(x=>x.id===openLeadId); if(b && b.contactId===cid) openLead(openLeadId); }
+  }catch(e){}
+}
+/* --- Acceso con contraseña (la valida el Worker; no se guarda en el código) --- */
+function iniciarGHL(){
+  if(!GHL.url) return;
+  const saved = localStorage.getItem("dvk_pass");
+  if(saved){ GHL.key=saved; conectarGHL(); }
+  else { mostrarLogin(); }
+}
+function mostrarLogin(){ const o=document.getElementById("login-ov"); if(o){ o.style.display="flex"; const i=document.getElementById("login-pass"); if(i) i.focus(); } }
+function ocultarLogin(){ const o=document.getElementById("login-ov"); if(o) o.style.display="none"; }
+function cerrarSesion(){ localStorage.removeItem("dvk_pass"); GHL.key=""; mostrarLogin(); }
+async function intentarLogin(){
+  const inp=document.getElementById("login-pass"), err=document.getElementById("login-err");
+  const pass=(inp.value||"").trim(); if(!pass) return;
+  err.textContent="Comprobando…";
+  try{
+    const r=await fetch(GHL.url+"/leads?key="+encodeURIComponent(pass));
+    if(r.status===401){ err.textContent="Contraseña incorrecta."; return; }
+    if(!r.ok){ err.textContent="Error de conexión con el servidor."; return; }
+    GHL.key=pass; localStorage.setItem("dvk_pass",pass);
+    err.textContent=""; ocultarLogin(); conectarGHL();
+  }catch(e){ err.textContent="No se pudo conectar."; }
+}
 
 /* notas de revisión de llamadas (Fathom) persistentes */
 const NOTAS_KEY = "daviking_notas_llamadas_v2";
@@ -1459,6 +1516,8 @@ function toggleCheck(id, tipo){
 /* ===================== DRAWER DE LEAD ===================== */
 function openLead(id, scrollPago){
   openLeadId=id;
+  const _b=LEADS.find(x=>x.id===id);
+  if(_b && _b.contactId && !GHL_DETALLE[_b.contactId]) enriquecerLead(_b.contactId);
   const l=L(id);
   const ci=CLOSER_INFO[l.closer];
   document.getElementById("d-name").innerHTML = `<span class="avatar lg ${ci.cls}">${iniciales(l.nombre)}</span><div><h2>${l.nombre}</h2></div>`;
@@ -2190,6 +2249,19 @@ document.getElementById("pipe-filter").addEventListener("click",e=>{
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ closeDrawer(); closeGuide(); } });
 
 rerender();
+iniciarGHL();   /* pide contraseña y, si es correcta, carga los leads reales de GHL */
 </script>
+<div id="login-ov" style="position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;background:rgba(10,12,16,.93);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)">
+  <div style="background:#171b26;border:1px solid #2a3142;border-radius:16px;padding:30px 28px;width:min(380px,92vw);text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.55);font-family:inherit">
+    <div style="font-size:34px;line-height:1">🔒</div>
+    <h2 style="margin:10px 0 2px;color:#fff;font-size:18px">CRM Daviking · Acceso</h2>
+    <p style="margin:0 0 16px;color:#8b93a7;font-size:13px">Introduce la contraseña del equipo</p>
+    <input id="login-pass" type="password" placeholder="Contraseña" autocomplete="current-password"
+      style="width:100%;padding:11px 13px;border-radius:10px;border:1px solid #2a3142;background:#0e1116;color:#fff;font-size:14px;box-sizing:border-box;outline:none"
+      onkeydown="if(event.key==='Enter')intentarLogin()">
+    <div id="login-err" style="color:#f4707e;font-size:12px;min-height:16px;margin:9px 0"></div>
+    <button onclick="intentarLogin()" style="width:100%;padding:12px;border:0;border-radius:10px;background:#34D399;color:#08120c;font-weight:800;font-size:14px;cursor:pointer">Entrar</button>
+  </div>
+</div>
 </body>
 </html>
