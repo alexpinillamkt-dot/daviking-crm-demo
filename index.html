@@ -2249,7 +2249,9 @@ document.getElementById("pipe-filter").addEventListener("click",e=>{
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ closeDrawer(); closeGuide(); } });
 
 rerender();
-iniciarGHL();   /* pide contraseña y, si es correcta, carga los leads reales de GHL */
+/* el login está en el HTML tras este <script>; lo lanzamos cuando el DOM esté listo */
+if(document.readyState==="loading"){ document.addEventListener("DOMContentLoaded", iniciarGHL); }
+else { iniciarGHL(); }
 </script>
 <div id="login-ov" style="position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;background:rgba(10,12,16,.93);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)">
   <div style="background:#171b26;border:1px solid #2a3142;border-radius:16px;padding:30px 28px;width:min(380px,92vw);text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.55);font-family:inherit">
