@@ -224,14 +224,17 @@
   .leadcard{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:14px 15px;box-shadow:var(--shadow);cursor:pointer;transition:transform .12s,border-color .12s,background .12s;position:relative;overflow:hidden}
   .leadcard:hover{transform:translateY(-2px);background:var(--surface-2);border-color:var(--line-2)}
   .leadcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px}
-  .leadcard.s-nuevo::before{background:var(--blue)}
-  .leadcard.s-validado::before{background:#A78BFA}
-  .leadcard.s-confirmado::before{background:var(--brand)}
-  .leadcard.s-realizada::before{background:var(--amber)}
-  .leadcard.s-ganado::before{background:var(--green)}
-  .leadcard.s-nocompra::before{background:var(--red)}
-  .leadcard.s-noshow::before{background:var(--red)}
-  .leadcard.s-reagendado::before{background:var(--faint)}
+  .leadcard.s-agendada::before{background:#5BAEF6}
+  .leadcard.s-realizada::before{background:#0EA5E9}
+  .leadcard.s-cualificado::before{background:#34D399}
+  .leadcard.s-seguimiento::before{background:#F0B45A}
+  .leadcard.s-reagendado::before{background:#2DD4BF}
+  .leadcard.s-reserva::before{background:#A78BFA}
+  .leadcard.s-pagohecho::before{background:#43D6A0}
+  .leadcard.s-nocualificado::before{background:#94A3B8}
+  .leadcard.s-cancelado::before{background:#F4707E}
+  .leadcard.s-noasistencia::before{background:#7C8499}
+  .leadcard.s-perdida::before{background:#6B7280}
   .leadcard .lct{display:flex;align-items:center;gap:9px}
   .leadcard .lnm{font-weight:660;font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .leadcard .lmeta{font-size:11.5px;color:var(--muted);margin-top:8px;display:flex;flex-direction:column;gap:4px}
@@ -752,24 +755,29 @@ function fechaConOffset(baseYmd, days){
 }
 function eur(n){ return Number(n).toLocaleString("es-ES")+" €"; }
 
-/* ===================== ESTADOS DEL PIPELINE ===================== */
+/* ===================== ESTADOS DEL PIPELINE (11 etapas reales de GHL) ===================== */
 const ESTADOS = {
-  nuevo:      {t:"Nuevo / Agendado", color:"#5BAEF6", dot:"var(--blue)", grupo:"activo"},
-  validado:   {t:"Validado (cualifica)", color:"#A78BFA", dot:"#A78BFA", grupo:"activo"},
-  confirmado: {t:"Confirmado", color:"#34D399", dot:"var(--brand)", grupo:"activo"},
-  realizada:  {t:"Llamada realizada", color:"#F0B45A", dot:"var(--amber)", grupo:"activo"},
-  seguimiento:{t:"Seguimiento", color:"#F0B45A", dot:"var(--amber)", grupo:"activo"},
-  ganado:     {t:"Pago hecho · Ganado", color:"#43D6A0", dot:"var(--green)", grupo:"cerrado"},
-  nocompra:   {t:"No compra · perdido", color:"#F4707E", dot:"var(--red)", grupo:"cerrado"},
-  noshow:     {t:"No-show", color:"#F4707E", dot:"var(--red)", grupo:"cerrado"},
-  reagendado: {t:"Reagendado", color:"#7C8499", dot:"var(--faint)", grupo:"activo"},
+  agendada:      {t:"Cita agendada",   color:"#5BAEF6", dot:"#5BAEF6", grupo:"activo"},
+  realizada:     {t:"Cita realizada",  color:"#0EA5E9", dot:"#0EA5E9", grupo:"activo"},
+  cualificado:   {t:"Cualificado",     color:"#34D399", dot:"#34D399", grupo:"activo"},
+  seguimiento:   {t:"Seguimiento",     color:"#F0B45A", dot:"#F0B45A", grupo:"activo"},
+  reagendado:    {t:"Reagendado",      color:"#2DD4BF", dot:"#2DD4BF", grupo:"activo"},
+  reserva:       {t:"Reserva",         color:"#A78BFA", dot:"#A78BFA", grupo:"activo"},
+  pagohecho:     {t:"Pago hecho",      color:"#43D6A0", dot:"#43D6A0", grupo:"cerrado"},
+  nocualificado: {t:"No cualificado",  color:"#94A3B8", dot:"#94A3B8", grupo:"cerrado"},
+  cancelado:     {t:"Cancelado",       color:"#F4707E", dot:"#F4707E", grupo:"cerrado"},
+  noasistencia:  {t:"No asistencia",   color:"#7C8499", dot:"#7C8499", grupo:"cerrado"},
+  perdida:       {t:"Pérdida",         color:"#6B7280", dot:"#6B7280", grupo:"cerrado"},
 };
-const ORDEN_KANBAN = ["nuevo","validado","confirmado","realizada","seguimiento","ganado","nocompra","noshow","reagendado"];
+const ORDEN_KANBAN = ["agendada","realizada","cualificado","seguimiento","reagendado","reserva","pagohecho","nocualificado","cancelado","noasistencia","perdida"];
+/* Mapeo de claves antiguas -> nuevas (para normalizar lo que llegue del Worker durante el despliegue) */
+const ESTADO_LEGACY = { nuevo:"agendada", validado:"cualificado", confirmado:"reserva", realizada:"realizada", seguimiento:"seguimiento", ganado:"pagohecho", nocompra:"perdida", noshow:"noasistencia", reagendado:"reagendado" };
+function normalizarEstado(e){ return ESTADO_LEGACY[e] || (ESTADOS[e] ? e : "agendada"); }
 
 /* ===================== DATOS INVENTADOS · LEADS ===================== */
 let LEADS = [
   {id:"l1", closer:"pascu", nombre:"Marcos Llorente", email:"marcos.llorente@gmail.com", tel:"+34 666 214 880",
-   estado:"nuevo", agendado:"2026-05-27", llamada:"2026-05-30", validada:false, confirmada:false, asistio:null,
+   estado:"agendada", agendado:"2026-05-27", llamada:"2026-05-30", validada:false, confirmada:false, asistio:null,
    objetivo:"Bajar 12 kg y recomponer", nivel:"Entrena 2x/sem, sin pauta", presupuesto:"Hasta 2.000 €", origen:"Instagram (reel sentadilla)",
    dolor:"Lleva 3 años con efecto rebote. Pierde y recupera. Frustrado, quiere algo sostenible.",
    form:[
@@ -780,7 +788,7 @@ let LEADS = [
      {q:"Del 1 al 10, ¿cómo de comprometido estás?", a:"9"},
    ]},
   {id:"l2", closer:"pascu", nombre:"Lucía Fernández", email:"lucia.fdz@outlook.com", tel:"+34 622 109 334",
-   estado:"validado", agendado:"2026-05-26", llamada:"2026-05-31", validada:true, confirmada:false, asistio:null,
+   estado:"cualificado", agendado:"2026-05-26", llamada:"2026-05-31", validada:true, confirmada:false, asistio:null,
    objetivo:"Definición + energía", nivel:"Entrena 4x/sem", presupuesto:"1.000–1.500 €", origen:"Recomendación de clienta",
    dolor:"Estancada hace meses. Le falta estructura nutricional, come bien pero a ojo.",
    form:[
@@ -791,7 +799,7 @@ let LEADS = [
      {q:"Del 1 al 10, ¿compromiso?", a:"8"},
    ]},
   {id:"l3", closer:"pascu", nombre:"David Sánchez", email:"dsanchez.fit@gmail.com", tel:"+34 611 778 220",
-   estado:"confirmado", agendado:"2026-05-25", llamada:"2026-05-29", validada:true, confirmada:true, asistio:null,
+   estado:"reserva", agendado:"2026-05-25", llamada:"2026-05-29", validada:true, confirmada:true, asistio:null,
    objetivo:"Ganar masa muscular", nivel:"Avanzado, 5x/sem", presupuesto:"Sin límite si convence", origen:"YouTube",
    dolor:"Quiere subir de categoría en powerlifting. Nutrición desordenada en volumen.",
    form:[
@@ -868,7 +876,7 @@ let LEADS = [
      {w:"Javier", c:"Vale pero me lo tengo que pensar unos días."},
    ]},
   {id:"l6", closer:"pascu", nombre:"Sara Montes", email:"sara.montes@icloud.com", tel:"+34 655 332 871",
-   estado:"ganado", agendado:"2026-05-12", llamada:"2026-05-19", validada:true, confirmada:true, asistio:true,
+   estado:"pagohecho", agendado:"2026-05-12", llamada:"2026-05-19", validada:true, confirmada:true, asistio:true,
    objetivo:"Plan integral fitness+nutri", nivel:"Intermedio", presupuesto:"Decidida a invertir", origen:"Recomendación",
    dolor:"Cansada de planes genéricos. Quiere acompañamiento serio y a largo plazo.",
    form:[
@@ -899,7 +907,7 @@ let LEADS = [
      {w:"Sara", c:"Perfecto, hazlo en dos pagos de 900. Vamos."},
    ]},
   {id:"l7", closer:"pascu", nombre:"Pablo Herrera", email:"pablo.herrera@gmail.com", tel:"+34 677 901 552",
-   estado:"ganado", agendado:"2026-05-08", llamada:"2026-05-15", validada:true, confirmada:true, asistio:true,
+   estado:"pagohecho", agendado:"2026-05-08", llamada:"2026-05-15", validada:true, confirmada:true, asistio:true,
    objetivo:"Mejorar alimentación", nivel:"Entrena solo", presupuesto:"Medio", origen:"Instagram",
    dolor:"Entrena bien pero come fatal. Solo quiere ordenar la nutrición.",
    form:[
@@ -930,7 +938,7 @@ let LEADS = [
      {w:"Pablo", c:"Dale, pago ahora."},
    ]},
   {id:"l8", closer:"pascu", nombre:"Elena Vidal", email:"elena.vidal@gmail.com", tel:"+34 688 120 449",
-   estado:"noshow", agendado:"2026-05-21", llamada:"2026-05-26", validada:true, confirmada:false, asistio:false,
+   estado:"noasistencia", agendado:"2026-05-21", llamada:"2026-05-26", validada:true, confirmada:false, asistio:false,
    objetivo:"Perder peso", nivel:"Principiante", presupuesto:"?", origen:"Anuncio",
    dolor:"Mostró interés pero nunca confirmó. No se presentó a la llamada.",
    form:[
@@ -964,7 +972,7 @@ let LEADS = [
 
   /* ---- LEADS DE ÁLVARO ---- */
   {id:"a1", closer:"alvaro", nombre:"Nuria Castro", email:"nuria.castro@gmail.com", tel:"+34 622 991 003",
-   estado:"confirmado", agendado:"2026-05-26", llamada:"2026-05-29", validada:true, confirmada:true, asistio:null,
+   estado:"reserva", agendado:"2026-05-26", llamada:"2026-05-29", validada:true, confirmada:true, asistio:null,
    objetivo:"Bajar grasa", nivel:"Principiante", presupuesto:"1.000 €", origen:"Instagram",
    dolor:"Quiere empezar bien guiada, le da miedo el gimnasio.",
    form:[
@@ -1003,7 +1011,7 @@ let LEADS = [
      {w:"Roberto", c:"Me vale. Enséñame cómo sería el plan de entrenos antes de pagar."},
    ]},
   {id:"a3", closer:"alvaro", nombre:"Marta León", email:"marta.leon@gmail.com", tel:"+34 633 220 119",
-   estado:"ganado", agendado:"2026-05-10", llamada:"2026-05-17", validada:true, confirmada:true, asistio:true,
+   estado:"pagohecho", agendado:"2026-05-10", llamada:"2026-05-17", validada:true, confirmada:true, asistio:true,
    objetivo:"Definición boda", nivel:"Intermedio", presupuesto:"Medio-alto", origen:"Instagram",
    dolor:"Se casa en 6 meses, quiere llegar definida. Muy motivada.",
    form:[
@@ -1118,9 +1126,10 @@ function setLead(id, patch){ Object.assign(leadStore(id), patch); saveStore(); }
    Si no hay conexión, se queda con los datos de demostración de abajo. */
 const GHL = { url:"https://daviking-ghl-bridge.alexpinillamkt.workers.dev", key:"" };
 let GHL_DETALLE = {};   // caché de fichas (/lead) por contactId
+let GHL_CITAS_CARGADAS = false;   // evita repetir el fetch de /appointments
 function mapGhlLead(g){
   return { id:g.id, contactId:g.contactId||"", closer:g.closer||"pascu", nombre:g.nombre||"Sin nombre",
-    email:g.email||"", tel:g.tel||"", estado:g.estado||"nuevo",
+    email:g.email||"", tel:g.tel||"", estado:normalizarEstado(g.estado||"agendada"),
     agendado:"", llamada:"", validada:false, confirmada:false, asistio:null,
     objetivo:"", nivel:"", presupuesto:"", origen:"GHL", dolor:"", form:[],
     formatoPago:null, fechaSeguimiento:"", valor:g.valor||0, _ghl:true };
@@ -1133,9 +1142,46 @@ async function conectarGHL(){
     if(data && Array.isArray(data.leads) && data.leads.length){
       LEADS = data.leads.map(mapGhlLead);
       rerender();
-      try{ if(typeof toast==="function") toast("🟢 Conectado a GHL · "+data.leads.length+" leads reales (solo lectura)"); }catch(e){}
+      try{ if(typeof toast==="function") toast("🟢 Conectado a GHL · "+data.leads.length+" leads reales"); }catch(e){}
+      cargarCitasGHL();   // tras tener leads reales, rellena la agenda con las citas del calendario
     }
   }catch(e){ try{ if(typeof toast==="function") toast("⚪ Sin conexión a GHL · mostrando datos de demo"); }catch(_){} }
+}
+/* Convierte 'start' (epoch ms o ISO) a YYYY-MM-DD */
+function startToYmd(start){
+  let d;
+  if(typeof start==="number"){ d=new Date(start); }
+  else if(typeof start==="string" && /^\d+$/.test(start)){ d=new Date(Number(start)); }
+  else { d=new Date(start); }
+  if(isNaN(d.getTime())) return "";
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+/* Carga las citas reales del calendario y asigna lead.llamada por contactId.
+   Si un lead tiene varias citas, usa la más próxima en el futuro; si todas son
+   pasadas, usa la última. Solo en modo conectado (con leads reales de GHL). */
+async function cargarCitasGHL(){
+  if(!GHL.url || !GHL.key || GHL_CITAS_CARGADAS) return;
+  GHL_CITAS_CARGADAS = true;
+  try{
+    const r = await fetch(GHL.url+"/appointments?key="+encodeURIComponent(GHL.key));
+    const data = await r.json();
+    if(!data || !Array.isArray(data.events)) return;
+    const porContacto = {};
+    data.events.forEach(ev=>{
+      const cid = ev.contactId; if(!cid) return;
+      const fecha = startToYmd(ev.start); if(!fecha) return;
+      (porContacto[cid] = porContacto[cid] || []).push(fecha);
+    });
+    let tocados = 0;
+    LEADS.forEach(l=>{
+      const fechas = porContacto[l.contactId];
+      if(!fechas || !fechas.length) return;
+      const futuras = fechas.filter(f=>f>=HOY).sort();
+      const elegida = futuras.length ? futuras[0] : fechas.slice().sort()[fechas.length-1];
+      if(elegida){ l.llamada = elegida; if(!l.agendado) l.agendado = elegida; tocados++; }
+    });
+    if(tocados){ rerender(); }
+  }catch(e){ GHL_CITAS_CARGADAS = false; }
 }
 async function enriquecerLead(cid){
   try{
@@ -1198,7 +1244,7 @@ function misLeads(){ return LEADS.map(x=>L(x.id)).filter(l=> esGeneral() || l.cl
 
 /* ===================== CASH COLLECTED MODELO ===================== */
 function cashDeLead(l){
-  if(l.estado!=="ganado" || !l.formatoPago) return null;
+  if(l.estado!=="pagohecho" || !l.formatoPago) return null;
   const f = findFormato(l.formatoPago);
   if(!f) return null;
   const cierre = l.fechaCierre || HOY;
@@ -1219,8 +1265,8 @@ function totalesCash(closerFiltro){
   fuente.forEach(l=>{
     const c = cashDeLead(l);
     if(c){ cobrado+=c.cobrado; proyectado+=c.proyectado; ventas++; }
-    if(l.asistio===true || l.estado==="ganado" || l.estado==="nocompra") llamadas++;
-    if(l.estado==="nuevo"||l.estado==="validado"||l.estado==="confirmado"||l.estado==="reagendado") proximas++;
+    if(l.asistio===true || l.estado==="pagohecho" || l.estado==="perdida") llamadas++;
+    if(l.estado==="agendada"||l.estado==="cualificado"||l.estado==="reserva"||l.estado==="reagendado") proximas++;
   });
   const comision = Math.round(proyectado*COMISION_PCT);       // comisión proyectada (si se cobra todo)
   const comisionCobrada = Math.round(cobrado*COMISION_PCT);   // comisión DEVENGADA = sobre lo COBRADO
@@ -1232,7 +1278,7 @@ function tareasHoy(){
   const out=[];
   misLeads().forEach(l=>{
     const cs = esGeneral() ? " · 👤 "+CLOSER_INFO[l.closer].corto : "";
-    if(l.llamada===HOY && (l.estado==="confirmado")){ out.push({t:"Llamada HOY con "+l.nombre, m:"Confirmada · "+l.objetivo+cs, ico:"📞", cls:"green", id:l.id}); }
+    if(l.llamada===HOY && (l.estado==="reserva")){ out.push({t:"Llamada HOY con "+l.nombre, m:"Confirmada · "+l.objetivo+cs, ico:"📞", cls:"green", id:l.id}); }
     if(esFuturo(l.llamada) && !l.validada && l.estado!=="reagendado"){ out.push({t:"Validar a "+l.nombre, m:"¿Cualifica? · llamada "+etiquetaCuando(l.llamada,"")+cs, ico:"✅", cls:"blue", id:l.id}); }
     if(esFuturo(l.llamada) && l.validada && !l.confirmada && l.estado!=="reagendado"){ out.push({t:"Confirmar asistencia de "+l.nombre, m:"Llamada "+etiquetaCuando(l.llamada,"")+cs, ico:"📌", cls:"amber", id:l.id}); }
     if(l.estado==="seguimiento" && l.fechaSeguimiento===HOY){ out.push({t:"🔔 Seguimiento HOY: "+l.nombre, m:"Toca contactar para cerrar"+cs, ico:"🔔", cls:"amber", id:l.id}); }
@@ -1389,7 +1435,7 @@ function renderPipeline(){
 /* ===================== TARJETA DE LEAD ===================== */
 function leadCardHTML(l){
   const cash = cashDeLead(l);
-  const cuando = l.estado==="ganado" ? "Cerrado "+fmtCorta(l.fechaCierre||l.llamada)
+  const cuando = l.estado==="pagohecho" ? "Cerrado "+fmtCorta(l.fechaCierre||l.llamada)
     : esFuturo(l.llamada) ? "Llamada "+etiquetaCuando(l.llamada,"")
     : esPasado(l.llamada) ? "Llamada "+fmtCorta(l.llamada)
     : "Llamada hoy";
@@ -1435,20 +1481,20 @@ function iniciales(n){ return n.split(" ").map(p=>p[0]).slice(0,2).join("").toUp
 
 function accionesEstado(l){
   let b=[];
-  if(l.estado==="nuevo") b.push(`<button class="btn sm blue" onclick="event.stopPropagation();setEstado('${l.id}','validado')">Validar →</button>`);
-  else if(l.estado==="validado") b.push(`<button class="btn sm green" onclick="event.stopPropagation();setEstado('${l.id}','confirmado')">Confirmar →</button>`);
-  else if(l.estado==="confirmado") b.push(`<button class="btn sm amber" onclick="event.stopPropagation();setEstado('${l.id}','realizada')">Llamada hecha →</button>`);
+  if(l.estado==="agendada") b.push(`<button class="btn sm blue" onclick="event.stopPropagation();setEstado('${l.id}','cualificado')">Validar →</button>`);
+  else if(l.estado==="cualificado") b.push(`<button class="btn sm green" onclick="event.stopPropagation();setEstado('${l.id}','reserva')">Confirmar →</button>`);
+  else if(l.estado==="reserva") b.push(`<button class="btn sm amber" onclick="event.stopPropagation();setEstado('${l.id}','realizada')">Llamada hecha →</button>`);
   else if(l.estado==="realizada"){
     b.push(`<button class="btn sm primary" onclick="event.stopPropagation();openLead('${l.id}',true)">💸 Registrar pago</button>`);
     b.push(`<button class="btn sm amber" onclick="event.stopPropagation();setEstado('${l.id}','seguimiento')">No compra · seguimiento</button>`);
-    b.push(`<button class="btn sm red" onclick="event.stopPropagation();setEstado('${l.id}','nocompra')">No compra · perdido</button>`);
+    b.push(`<button class="btn sm red" onclick="event.stopPropagation();setEstado('${l.id}','perdida')">No compra · perdido</button>`);
     b.push(`<button class="btn sm" onclick="event.stopPropagation();setEstado('${l.id}','reagendado')">Reagendar</button>`);
   } else if(l.estado==="seguimiento"){
     b.push(`<button class="btn sm primary" onclick="event.stopPropagation();openLead('${l.id}',true)">💸 Registrar pago</button>`);
     b.push(`<button class="btn sm amber" onclick="event.stopPropagation();reprogramarSeguimiento('${l.id}')">🔔 Recordatorio +2 sem</button>`);
-    b.push(`<button class="btn sm red" onclick="event.stopPropagation();setEstado('${l.id}','nocompra')">Marcar perdido</button>`);
+    b.push(`<button class="btn sm red" onclick="event.stopPropagation();setEstado('${l.id}','perdida')">Marcar perdido</button>`);
   } else if(l.estado==="reagendado"){
-    b.push(`<button class="btn sm green" onclick="event.stopPropagation();setEstado('${l.id}','confirmado')">Confirmar →</button>`);
+    b.push(`<button class="btn sm green" onclick="event.stopPropagation();setEstado('${l.id}','reserva')">Confirmar →</button>`);
   }
   if(ESTADOS[l.estado].grupo==="activo"){
     b.push(`<button class="btn sm wa" onclick="event.stopPropagation();waLead('${l.id}')">💬 WhatsApp</button>`);
@@ -1464,7 +1510,7 @@ function renderAgenda(){
   const leads = misLeads();
   const futuras = leads.filter(l=> esFuturo(l.llamada) && ESTADOS[l.estado].grupo==="activo")
                        .sort((a,b)=>a.llamada<b.llamada?-1:1);
-  const pasadas = leads.filter(l=> l.estado==="realizada" || (esPasado(l.llamada) && (l.estado==="confirmado")) )
+  const pasadas = leads.filter(l=> l.estado==="realizada" || (esPasado(l.llamada) && (l.estado==="reserva")) )
                        .sort((a,b)=>a.llamada<b.llamada?1:-1);
   document.getElementById("future-cnt").textContent = futuras.length;
   document.getElementById("past-cnt").textContent = pasadas.length;
@@ -1476,41 +1522,73 @@ function renderAgenda(){
 
 /* ===================== ACCIONES DE ESTADO Y CHECKS ===================== */
 function setEstado(id, nuevo){
+  const l=L(id);
+  const anterior=l.estado;
   const patch={estado:nuevo};
-  if(nuevo==="validado") patch.validada=true;
-  if(nuevo==="confirmado"){ patch.validada=true; patch.confirmada=true; }
-  if(nuevo==="realizada"){ patch.asistio=true; if(!L(id).resultado) patch.resultado="pendiente"; }
-  if(nuevo==="noshow"){ patch.asistio=false; patch.resultado="noshow"; }
-  if(nuevo==="nocompra"){ patch.resultado="nocompra"; }
-  if(nuevo==="seguimiento"){ patch.asistio=true; patch.validada=true; patch.resultado="seguimiento"; patch.callRes="seguimiento"; if(!L(id).fechaSeguimiento) patch.fechaSeguimiento=fechaConOffset(HOY,14); }
+  if(nuevo==="cualificado") patch.validada=true;
+  if(nuevo==="reserva"){ patch.validada=true; patch.confirmada=true; }
+  if(nuevo==="realizada"){ patch.asistio=true; if(!l.resultado) patch.resultado="pendiente"; }
+  if(nuevo==="noasistencia"){ patch.asistio=false; patch.resultado="noshow"; }
+  if(nuevo==="perdida"){ patch.resultado="nocompra"; }
+  if(nuevo==="nocualificado"){ patch.resultado="nocompra"; }
+  if(nuevo==="cancelado"){ patch.resultado="nocompra"; }
+  if(nuevo==="seguimiento"){ patch.asistio=true; patch.validada=true; patch.resultado="seguimiento"; patch.callRes="seguimiento"; if(!l.fechaSeguimiento) patch.fechaSeguimiento=fechaConOffset(HOY,14); }
+  // Cambio OPTIMISTA en local (UI al instante)
   setLead(id, patch);
   toast(estadoToast(nuevo));
   rerender();
+  // En paralelo, escribe en GHL; si falla, revierte
+  moverEnGHL(L(id), nuevo).then(ok=>{
+    if(!ok){ setLead(id, {estado:anterior}); rerender(); if(openLeadId===id) refreshDrawer(); }
+  });
 }
 function estadoToast(e){
-  const m={validado:"Lead validado ✓",confirmado:"Asistencia confirmada ✓",realizada:"Llamada marcada como realizada",nocompra:"Marcado como No compra · perdido",noshow:"Marcado como No-show",ganado:"¡Venta registrada! 🏆",reagendado:"Lead reagendado",seguimiento:"En seguimiento · recordatorio en 2 semanas 🔔"};
+  const m={cualificado:"Lead cualificado ✓",reserva:"Reserva · asistencia confirmada ✓",realizada:"Cita marcada como realizada",perdida:"Marcado como Pérdida",nocualificado:"Marcado como No cualificado",cancelado:"Cita cancelada",noasistencia:"Marcado como No asistencia",pagohecho:"¡Venta registrada! 🏆",reagendado:"Lead reagendado",seguimiento:"En seguimiento · recordatorio en 2 semanas 🔔"};
   return m[e]||"Actualizado";
+}
+/* ===================== ESCRITURA EN GHL (bidireccional) =====================
+   Mueve la oportunidad en GHL al cambiar la etapa del lead.
+   En modo demo (sin GHL.key o lead sin id) no escribe y devuelve true. */
+async function moverEnGHL(lead, nuevoEstado){
+  if(!GHL.key || !lead || !lead.id) return true; // modo demo: no escribe
+  try{
+    const r = await fetch(GHL.url+"/move?key="+encodeURIComponent(GHL.key), {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ opportunityId: lead.id, estado: nuevoEstado })
+    });
+    const data = await r.json().catch(()=>({}));
+    if(!r.ok || !data.stageId){ toast("⚠️ No se pudo actualizar en GHL · se revirtió (¿Worker actualizado?)"); return false; }
+    toast("✓ Actualizado en GHL");
+    return true;
+  }catch(e){ toast("⚠️ Sin conexión con GHL · se revirtió el cambio"); return false; }
 }
 function toggleCheck(id, tipo){
   const l=L(id);
+  const anterior=l.estado;
+  let nuevoEstado=null; // si cambia de etapa, lo sincronizamos con GHL
   if(tipo==="validada"){
     const v=!l.validada;
     const patch={validada:v};
-    if(v && l.estado==="nuevo") patch.estado="validado";
-    if(!v && l.estado==="validado") patch.estado="nuevo";
-    setLead(id,patch); toast(v?"Validado ✓":"Validación quitada");
+    if(v && l.estado==="agendada"){ patch.estado="cualificado"; nuevoEstado="cualificado"; }
+    if(!v && l.estado==="cualificado"){ patch.estado="agendada"; nuevoEstado="agendada"; }
+    setLead(id,patch); toast(v?"Cualificado ✓":"Cualificación quitada");
   } else if(tipo==="confirmada"){
     const v=!l.confirmada;
     const patch={confirmada:v};
-    if(v){ patch.validada=true; if(l.estado==="nuevo"||l.estado==="validado") patch.estado="confirmado"; }
-    if(!v && l.estado==="confirmado") patch.estado="validado";
+    if(v){ patch.validada=true; if(l.estado==="agendada"||l.estado==="cualificado"){ patch.estado="reserva"; nuevoEstado="reserva"; } }
+    if(!v && l.estado==="reserva"){ patch.estado="cualificado"; nuevoEstado="cualificado"; }
     setLead(id,patch); toast(v?"Asistencia confirmada ✓":"Confirmación quitada");
   } else if(tipo==="noshow"){
     const v=!(l.asistio===false);
-    if(v){ setLead(id,{asistio:false,estado:"noshow",resultado:"noshow"}); toast("Marcado como No-show"); }
-    else { setLead(id,{asistio:null,estado:"confirmado",resultado:undefined}); toast("No-show deshecho"); }
+    if(v){ setLead(id,{asistio:false,estado:"noasistencia",resultado:"noshow"}); nuevoEstado="noasistencia"; toast("Marcado como No asistencia"); }
+    else { setLead(id,{asistio:null,estado:"reserva",resultado:undefined}); nuevoEstado="reserva"; toast("No asistencia deshecho"); }
   }
   rerender();
+  if(nuevoEstado){
+    moverEnGHL(L(id), nuevoEstado).then(ok=>{
+      if(!ok){ setLead(id, {estado:anterior}); rerender(); if(openLeadId===id) refreshDrawer(); }
+    });
+  }
 }
 
 /* ===================== DRAWER DE LEAD ===================== */
@@ -1606,7 +1684,7 @@ function drawerBody(l){
     </div>`;
 
   html += `<div id="pago-anchor"></div>`;
-  if(l.estado==="ganado" && cash){
+  if(l.estado==="pagohecho" && cash){
     html += pagoCerradoHTML(l, cash);
   } else if(l.estado==="realizada"){
     html += pagoSelectorHTML(l);
@@ -1619,47 +1697,52 @@ function escapeHtml(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;"
 
 function timelineHTML(l){
   const flow=[
-    {k:"nuevo", t:"Nuevo / Agendado", dt:"Agendó "+fmtCorta(l.agendado)},
-    {k:"validado", t:"Validado (cualifica)", dt:l.validada?"Cualifica ✓":"Pendiente de validar"},
-    {k:"confirmado", t:"Confirmado", dt:l.confirmada?"Asistencia confirmada ✓":"Sin confirmar"},
-    {k:"realizada", t:"Llamada realizada", dt:l.asistio===true?"Asistió ✓":l.asistio===false?"No-show ✕":"Programada "+fmtCorta(l.llamada)},
-    {k:"final", t: l.estado==="ganado"?"Pago hecho · Ganado":l.estado==="nocompra"?"No compra":l.estado==="noshow"?"No-show":l.estado==="reagendado"?"Reagendado":"Desenlace", dt: desenlaceTexto(l)},
+    {k:"agendada", t:"Cita agendada", dt:"Agendó "+fmtCorta(l.agendado)},
+    {k:"cualificado", t:"Cualificado", dt:l.validada?"Cualifica ✓":"Pendiente de validar"},
+    {k:"reserva", t:"Reserva (confirmado)", dt:l.confirmada?"Asistencia confirmada ✓":"Sin confirmar"},
+    {k:"realizada", t:"Cita realizada", dt:l.asistio===true?"Asistió ✓":l.asistio===false?"No asistió ✕":"Programada "+fmtCorta(l.llamada)},
+    {k:"final", t: l.estado==="pagohecho"?"Pago hecho · Ganado":l.estado==="perdida"?"Pérdida":l.estado==="nocualificado"?"No cualificado":l.estado==="cancelado"?"Cancelado":l.estado==="noasistencia"?"No asistencia":l.estado==="reagendado"?"Reagendado":"Desenlace", dt: desenlaceTexto(l)},
   ];
-  const idxOrden=["nuevo","validado","confirmado","realizada"];
+  const idxOrden=["agendada","cualificado","reserva","realizada"];
   const cur=idxOrden.indexOf(l.estado);
+  const cerrados=["pagohecho","perdida","nocualificado","cancelado","noasistencia","reagendado"];
   return `<div class="tl">${flow.map((s,i)=>{
     let cls="pend";
     if(s.k==="final"){
-      if(["ganado","nocompra","noshow","reagendado"].includes(l.estado)) cls="done";
+      if(cerrados.includes(l.estado)) cls="done";
     } else {
       const si=idxOrden.indexOf(s.k);
       if(cur===-1){ cls="done"; }
       else if(si<cur) cls="done";
       else if(si===cur) cls="now";
     }
-    if(s.k==="validado" && l.validada && cls==="pend") cls="done";
-    if(s.k==="confirmado" && l.confirmada && cls==="pend") cls="done";
+    if(s.k==="cualificado" && l.validada && cls==="pend") cls="done";
+    if(s.k==="reserva" && l.confirmada && cls==="pend") cls="done";
     if(s.k==="realizada" && l.asistio===true && cls==="pend") cls="done";
     const mk = cls==="done"?"✓":cls==="now"?"●":(i+1);
     return `<div class="tlstep ${cls}"><div class="mk">${mk}</div><div class="ti"><div class="nm">${s.t}</div><div class="dt">${s.dt}</div></div></div>`;
   }).join("")}</div>`;
 }
 function desenlaceTexto(l){
-  if(l.estado==="ganado") return "Cerrado "+fmtCorta(l.fechaCierre||l.llamada);
-  if(l.estado==="nocompra") return "No compró";
-  if(l.estado==="noshow") return "No se presentó";
+  if(l.estado==="pagohecho") return "Cerrado "+fmtCorta(l.fechaCierre||l.llamada);
+  if(l.estado==="perdida") return "No compró (pérdida)";
+  if(l.estado==="nocualificado") return "No cualificado";
+  if(l.estado==="cancelado") return "Cita cancelada";
+  if(l.estado==="noasistencia") return "No se presentó";
   if(l.estado==="reagendado") return "Movida a "+fmtCorta(l.llamada);
   return "Pendiente de registrar";
 }
 
 function drawerEstadoBotones(l){
   const all=[
-    {k:"validado",t:"Validado",cls:"blue"},
-    {k:"confirmado",t:"Confirmado",cls:"green"},
-    {k:"realizada",t:"Llamada hecha",cls:"amber"},
+    {k:"cualificado",t:"Cualificado",cls:"blue"},
+    {k:"reserva",t:"Reserva (confirmado)",cls:"green"},
+    {k:"realizada",t:"Cita realizada",cls:"amber"},
     {k:"seguimiento",t:"Seguimiento",cls:"amber"},
-    {k:"nocompra",t:"No compra · perdido",cls:"red"},
-    {k:"noshow",t:"No-show",cls:"red"},
+    {k:"perdida",t:"Pérdida",cls:"red"},
+    {k:"nocualificado",t:"No cualificado",cls:"red"},
+    {k:"cancelado",t:"Cancelado",cls:"red"},
+    {k:"noasistencia",t:"No asistencia",cls:"red"},
     {k:"reagendado",t:"Reagendar",cls:""},
   ];
   return `<div class="dactions">${all.filter(b=>b.k!==l.estado).map(b=>
@@ -1686,17 +1769,29 @@ function waLead(id){
 }
 function setSeguimiento(id, days){
   const fecha=fechaConOffset(HOY,days);
+  const anterior=L(id).estado;
   setLead(id,{estado:'seguimiento',resultado:'seguimiento',callRes:'seguimiento',asistio:true,validada:true,fechaSeguimiento:fecha});
   toast('🔔 Recordatorio fijado para el '+fmtCorta(fecha));
   rerenderBackground(); refreshDrawer();
+  if(anterior!=='seguimiento'){
+    moverEnGHL(L(id), 'seguimiento').then(ok=>{
+      if(!ok){ setLead(id, {estado:anterior}); rerenderBackground(); if(openLeadId===id) refreshDrawer(); }
+    });
+  }
 }
 function setSeguimientoCustom(id){
   const v=window.prompt('Fecha del próximo seguimiento (AAAA-MM-DD):', fechaConOffset(HOY,14));
   if(!v) return;
   if(!/^\d{4}-\d{2}-\d{2}$/.test(v)){ toast('Formato no válido. Usa AAAA-MM-DD'); return; }
+  const anterior=L(id).estado;
   setLead(id,{estado:'seguimiento',resultado:'seguimiento',fechaSeguimiento:v});
   toast('🔔 Seguimiento fijado para el '+fmtCorta(v));
   rerenderBackground(); refreshDrawer();
+  if(anterior!=='seguimiento'){
+    moverEnGHL(L(id), 'seguimiento').then(ok=>{
+      if(!ok){ setLead(id, {estado:anterior}); rerenderBackground(); if(openLeadId===id) refreshDrawer(); }
+    });
+  }
 }
 function reprogramarSeguimiento(id){ setSeguimiento(id,14); }
 
@@ -1787,11 +1882,15 @@ function textoOffset(fecha){
 }
 function confirmarPago(id){
   if(!fmtSeleccionado) return;
-  setLead(id, {estado:"ganado", resultado:"ganado", formatoPago:fmtSeleccionado, fechaCierre:HOY, asistio:true, validada:true, confirmada:true, callRes:"ganada"});
+  const anterior=L(id).estado;
+  setLead(id, {estado:"pagohecho", resultado:"ganado", formatoPago:fmtSeleccionado, fechaCierre:HOY, asistio:true, validada:true, confirmada:true, callRes:"ganada"});
   fmtSeleccionado=null;
   toast("¡Venta registrada! 🏆 Cash collected actualizado");
   refreshDrawer();
   rerenderBackground();
+  moverEnGHL(L(id), "pagohecho").then(ok=>{
+    if(!ok){ setLead(id, {estado:anterior}); rerenderBackground(); if(openLeadId===id) refreshDrawer(); }
+  });
 }
 function pagoCerradoHTML(l, cash){
   const comTotal=Math.round(cash.proyectado*COMISION_PCT);
@@ -2059,15 +2158,15 @@ function cuelloTendenciaHTML(){
 const CALL_RES_LBL = { ganada:"Ganada", perdida:"Perdida", seguimiento:"Seguimiento", noshow:"No-show" };
 function callResDe(l){
   if(l.callRes) return l.callRes;
-  if(l.estado==="ganado") return "ganada";
-  if(l.estado==="nocompra") return "perdida";
-  if(l.estado==="noshow") return "noshow";
+  if(l.estado==="pagohecho") return "ganada";
+  if(l.estado==="perdida"||l.estado==="nocualificado"||l.estado==="cancelado") return "perdida";
+  if(l.estado==="noasistencia") return "noshow";
   if(l.estado==="realizada") return "seguimiento";
   return "seguimiento";
 }
 /* llamadas del closer activo = sus leads que ya tuvieron llamada (con resumen Fathom o resultado) */
 function llamadasDelCloser(){
-  return misLeads().filter(l=> l.resumen || l.callRes || ["ganado","nocompra","noshow","realizada"].includes(l.estado))
+  return misLeads().filter(l=> l.resumen || l.callRes || ["pagohecho","perdida","nocualificado","cancelado","noasistencia","realizada"].includes(l.estado))
     .sort((a,b)=> a.llamada<b.llamada?1:-1);
 }
 function llamadasFathomHTML(){
