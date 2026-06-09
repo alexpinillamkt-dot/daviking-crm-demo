@@ -684,7 +684,7 @@
 "use strict";
 
 /* ===================== FECHAS FIJAS (sin Date dinámico) ===================== */
-const HOY = "2026-05-29"; // viernes 29 mayo 2026 (referencia fija de la maqueta)
+const HOY = (function(){ const d=new Date(); const p=n=>(""+n).padStart(2,"0"); return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate()); })(); // fecha REAL de hoy (el CRM ya lee datos reales de GHL)
 const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 const MESES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 function ymd(s){const [y,m,d]=s.split("-").map(Number);return {y,m,d};}
