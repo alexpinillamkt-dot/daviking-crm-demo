@@ -1435,12 +1435,34 @@ function colBajoPunto(x,y){
   if(_drag&&_drag.ghost){ _drag.ghost.style.display=prev||""; }
   return el?el.closest(".kcol"):null;
 }
+function _resaltarCol(){
+  if(!_drag) return null;
+  const col=colBajoPunto(_drag.lastX,_drag.lastY);
+  document.querySelectorAll(".kcol.dragover").forEach(c=>c.classList.remove("dragover"));
+  if(col) col.classList.add("dragover");
+  return col;
+}
+/* scroll CONTINUO mientras el cursor está cerca de un borde (aunque no muevas el ratón) */
+function _autoScrollTick(){
+  if(!_drag) return;
+  const k=document.getElementById("kanban"); if(!k) return;
+  const r=k.getBoundingClientRect(), edge=100, x=_drag.lastX; let dx=0;
+  if(x>r.right-edge) dx=Math.min(34, (x-(r.right-edge))+8);
+  else if(x<r.left+edge) dx=-Math.min(34, ((r.left+edge)-x)+8);
+  if(dx){
+    const antes=k.scrollLeft; k.scrollLeft += dx;
+    if(k.scrollLeft!==antes){
+      if(_drag.ghost){ _drag.ghost.style.left=(_drag.lastX+12)+"px"; _drag.ghost.style.top=(_drag.lastY+8)+"px"; }
+      _resaltarCol();
+    }
+  }
+}
 function cardPointerDown(e,id){
   if(e.button!==0) return;
   if(e.pointerType && e.pointerType!=="mouse") return;                       // táctil: usar botones
   if(e.target.closest("button,.chk,.lchecks,.lactions,.lcash,a")) return;    // no arrastrar desde botones/checks
   const card=e.currentTarget;
-  _drag={ id, x0:e.clientX, y0:e.clientY, moved:false, card, ghost:null, pid:e.pointerId };
+  _drag={ id, x0:e.clientX, y0:e.clientY, lastX:e.clientX, lastY:e.clientY, moved:false, card, ghost:null, pid:e.pointerId, timer:null };
   try{ card.setPointerCapture(e.pointerId); }catch(_){}
   card.addEventListener("pointermove", cardPointerMove);
   card.addEventListener("pointerup", cardPointerUp);
@@ -1449,25 +1471,24 @@ function cardPointerDown(e,id){
 function cardPointerMove(e){
   if(!_drag) return;
   if(e.buttons===0){ cardPointerUp(e); return; }                             // se soltó fuera
+  _drag.lastX=e.clientX; _drag.lastY=e.clientY;
   if(!_drag.moved){
     if(Math.abs(e.clientX-_drag.x0)+Math.abs(e.clientY-_drag.y0) < 6) return;
     _drag.moved=true; _drag.card.classList.add("dragging");
     const g=_drag.card.cloneNode(true); g.className="leadcard drag-ghost"; g.style.width=_drag.card.offsetWidth+"px";
     document.body.appendChild(g); _drag.ghost=g; document.body.style.userSelect="none";
+    _drag.timer=setInterval(_autoScrollTick,16);                             // scroll continuo
   }
   _drag.ghost.style.left=(e.clientX+12)+"px"; _drag.ghost.style.top=(e.clientY+8)+"px";
-  const col=colBajoPunto(e.clientX,e.clientY);
-  document.querySelectorAll(".kcol.dragover").forEach(x=>x.classList.remove("dragover"));
-  if(col) col.classList.add("dragover");
-  const k=document.getElementById("kanban");
-  if(k){ const r=k.getBoundingClientRect(), edge=90; if(e.clientX>r.right-edge) k.scrollLeft+=18; else if(e.clientX<r.left+edge) k.scrollLeft-=18; }
+  _resaltarCol();
 }
 function cardPointerUp(e){
   if(!_drag) return;
   const card=_drag.card;
+  if(_drag.timer) clearInterval(_drag.timer);
   if(card){ try{ card.releasePointerCapture(_drag.pid); }catch(_){} card.removeEventListener("pointermove", cardPointerMove); card.removeEventListener("pointerup", cardPointerUp); card.removeEventListener("pointercancel", cardPointerUp); }
   const moved=_drag.moved, id=_drag.id, ghost=_drag.ghost;
-  const col=moved?colBajoPunto(e.clientX,e.clientY):null;
+  const col=moved?colBajoPunto(_drag.lastX,_drag.lastY):null;
   if(ghost) ghost.remove();
   if(card) card.classList.remove("dragging");
   document.querySelectorAll(".kcol.dragover").forEach(x=>x.classList.remove("dragover"));
@@ -1619,6 +1640,7 @@ function setEstado(id, nuevo){
   // Cambio OPTIMISTA en local (UI al instante)
   setLead(id, patch);
   toast(estadoToast(nuevo));
+  _lastMovedId=id;
   rerender();
   resaltarLead(id);
   // En paralelo, escribe en GHL; si falla, revierte
