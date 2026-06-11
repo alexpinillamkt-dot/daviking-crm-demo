@@ -221,7 +221,10 @@
   .kc-empty{font-size:12px;color:var(--faint);text-align:center;padding:16px 8px;font-style:italic}
 
   /* ===== TARJETA DE LEAD ===== */
-  .leadcard{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:14px 15px;box-shadow:var(--shadow);cursor:pointer;transition:transform .12s,border-color .12s,background .12s;position:relative;overflow:hidden}
+  .leadcard{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:14px 15px;box-shadow:var(--shadow);cursor:grab;transition:transform .12s,border-color .12s,background .12s;position:relative;overflow:hidden}
+  .leadcard:active{cursor:grabbing}
+  .leadcard.dragging{opacity:.45;transform:scale(.98)}
+  .kcol-cards.dragover{outline:2px dashed var(--brand,#34D399);outline-offset:-3px;background:rgba(52,211,153,.07);border-radius:11px;min-height:60px}
   .leadcard:hover{transform:translateY(-2px);background:var(--surface-2);border-color:var(--line-2)}
   .leadcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px}
   .leadcard.s-agendada::before{background:#5BAEF6}
@@ -762,14 +765,14 @@ const ESTADOS = {
   cualificado:   {t:"Cualificado",     color:"#34D399", dot:"#34D399", grupo:"activo"},
   seguimiento:   {t:"Seguimiento",     color:"#F0B45A", dot:"#F0B45A", grupo:"activo"},
   reagendado:    {t:"Reagendado",      color:"#2DD4BF", dot:"#2DD4BF", grupo:"activo"},
-  reserva:       {t:"Agenda",          color:"#A78BFA", dot:"#A78BFA", grupo:"activo"},
+  reserva:       {t:"Cita confirmada", color:"#A78BFA", dot:"#A78BFA", grupo:"activo"},
   pagohecho:     {t:"Pago hecho",      color:"#43D6A0", dot:"#43D6A0", grupo:"cerrado"},
   nocualificado: {t:"No cualificado",  color:"#94A3B8", dot:"#94A3B8", grupo:"cerrado"},
   cancelado:     {t:"Cancelado",       color:"#F4707E", dot:"#F4707E", grupo:"cerrado"},
   noasistencia:  {t:"No asistencia",   color:"#7C8499", dot:"#7C8499", grupo:"cerrado"},
   perdida:       {t:"Pérdida",         color:"#6B7280", dot:"#6B7280", grupo:"cerrado"},
 };
-const ORDEN_KANBAN = ["agendada","realizada","cualificado","seguimiento","reagendado","reserva","pagohecho","nocualificado","cancelado","noasistencia","perdida"];
+const ORDEN_KANBAN = ["agendada","cualificado","reserva","realizada","seguimiento","reagendado","pagohecho","nocualificado","cancelado","noasistencia","perdida"];
 /* Mapeo de claves antiguas -> nuevas (para normalizar lo que llegue del Worker durante el despliegue) */
 const ESTADO_LEGACY = { nuevo:"agendada", validado:"cualificado", confirmado:"reserva", realizada:"realizada", seguimiento:"seguimiento", ganado:"pagohecho", nocompra:"perdida", noshow:"noasistencia", reagendado:"reagendado" };
 function normalizarEstado(e){ return ESTADO_LEGACY[e] || (ESTADOS[e] ? e : "agendada"); }
@@ -1410,6 +1413,13 @@ function vsEquipoHTML(){
 }
 
 /* ===================== RENDER: PIPELINE (KANBAN) ===================== */
+/* ----- Drag & drop del kanban (mover lead a otra etapa arrastrando) ----- */
+let _dragId=null;
+function dragStart(e,id){ _dragId=id; try{ e.dataTransfer.effectAllowed="move"; e.dataTransfer.setData("text/plain",id); }catch(_){} setTimeout(()=>{ if(e.target&&e.target.classList) e.target.classList.add("dragging"); },0); }
+function dragEnd(e){ _dragId=null; if(e.target&&e.target.classList) e.target.classList.remove("dragging"); document.querySelectorAll(".kcol-cards.dragover").forEach(x=>x.classList.remove("dragover")); }
+function dragOver(e){ e.preventDefault(); try{ e.dataTransfer.dropEffect="move"; }catch(_){} e.currentTarget.classList.add("dragover"); }
+function dragLeave(e){ if(e.currentTarget===e.target) e.currentTarget.classList.remove("dragover"); }
+function dropEnCol(e,est){ e.preventDefault(); e.currentTarget.classList.remove("dragover"); const id=_dragId||(e.dataTransfer&&e.dataTransfer.getData("text/plain")); _dragId=null; if(!id) return; const l=L(id); if(!l||l.estado===est) return; setEstado(id,est); }
 function renderPipeline(){
   const ci = CLOSER_INFO[CLOSER];
   document.getElementById("pipe-eyebrow").textContent = esGeneral() ? "Pipeline · Equipo (todos)" : "Pipeline · "+ci.nombre;
@@ -1425,8 +1435,8 @@ function renderPipeline(){
     const e = ESTADOS[est];
     return `<div class="kcol">
       <div class="kcol-h"><span class="kdot" style="background:${e.dot}"></span><span class="kt">${e.t}</span><span class="kc">${inCol.length}</span></div>
-      <div class="kcol-cards">
-        ${inCol.length? inCol.map(l=>leadCardHTML(l)).join("") : `<div class="kc-empty">— vacío —</div>`}
+      <div class="kcol-cards" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropEnCol(event,'${est}')">
+        ${inCol.length? inCol.map(l=>leadCardHTML(l)).join("") : `<div class="kc-empty">— suelta aquí —</div>`}
       </div>
     </div>`;
   }).join("");
@@ -1461,7 +1471,7 @@ function leadCardHTML(l){
   const ownTag = esGeneral()
     ? `<span class="owntag" title="Closer: ${CLOSER_INFO[l.closer].corto}"><span class="avatar sm ${CLOSER_INFO[l.closer].cls}">${CLOSER_INFO[l.closer].ini}</span>${CLOSER_INFO[l.closer].corto}</span>`
     : "";
-  return `<div class="leadcard s-${l.estado}" onclick="openLead('${l.id}')">
+  return `<div class="leadcard s-${l.estado}" draggable="true" ondragstart="dragStart(event,'${l.id}')" ondragend="dragEnd(event)" onclick="openLead('${l.id}')">
     <div class="lct">
       <span class="avatar sm ${CLOSER_INFO[l.closer].cls}">${iniciales(l.nombre)}</span>
       <span class="lnm">${l.nombre}</span>
@@ -1557,7 +1567,7 @@ function setEstado(id, nuevo){
   });
 }
 function estadoToast(e){
-  const m={cualificado:"Movido a Cualificado ✓",reserva:"Movido a Agenda · asistencia confirmada ✓",realizada:"Movido a Cita realizada",perdida:"Movido a Pérdida",nocualificado:"Movido a No cualificado",cancelado:"Movido a Cancelada",noasistencia:"Movido a No asistencia",pagohecho:"¡Venta registrada! 🏆",reagendado:"Movido a Reagendado",seguimiento:"Movido a Seguimiento · recordatorio en 2 semanas 🔔",agendada:"Reabierto · Cita agendada"};
+  const m={cualificado:"Movido a Cualificado ✓",reserva:"Movido a Cita confirmada ✓",realizada:"Movido a Cita realizada",perdida:"Movido a Pérdida",nocualificado:"Movido a No cualificado",cancelado:"Movido a Cancelada",noasistencia:"Movido a No asistencia",pagohecho:"¡Venta registrada! 🏆",reagendado:"Movido a Reagendado",seguimiento:"Movido a Seguimiento · recordatorio en 2 semanas 🔔",agendada:"Reabierto · Cita agendada"};
   return m[e]||"Actualizado";
 }
 /* ===================== ESCRITURA EN GHL (bidireccional) =====================
@@ -1713,7 +1723,7 @@ function timelineHTML(l){
   const flow=[
     {k:"agendada", t:"Cita agendada", dt:"Agendó "+fmtCorta(l.agendado)},
     {k:"cualificado", t:"Cualificado", dt:l.validada?"Cualifica ✓":"Pendiente de validar"},
-    {k:"reserva", t:"Agenda (confirmada)", dt:l.confirmada?"Asistencia confirmada ✓":"Sin confirmar"},
+    {k:"reserva", t:"Cita confirmada", dt:l.confirmada?"Asistencia confirmada ✓":"Sin confirmar"},
     {k:"realizada", t:"Cita realizada", dt:l.asistio===true?"Asistió ✓":l.asistio===false?"No asistió ✕":"Programada "+fmtCorta(l.llamada)},
     {k:"final", t: l.estado==="pagohecho"?"Pago hecho · Ganado":l.estado==="perdida"?"Pérdida":l.estado==="nocualificado"?"No cualificado":l.estado==="cancelado"?"Cancelado":l.estado==="noasistencia"?"No asistencia":l.estado==="reagendado"?"Reagendado":"Desenlace", dt: desenlaceTexto(l)},
   ];
@@ -1750,7 +1760,7 @@ function desenlaceTexto(l){
 function drawerEstadoBotones(l){
   const all=[
     {k:"cualificado",t:"Cualificado",cls:"blue"},
-    {k:"reserva",t:"Agenda (confirmada)",cls:"green"},
+    {k:"reserva",t:"Cita confirmada",cls:"green"},
     {k:"realizada",t:"Cita realizada",cls:"amber"},
     {k:"seguimiento",t:"Seguimiento",cls:"amber"},
     {k:"perdida",t:"Pérdida",cls:"red"},
