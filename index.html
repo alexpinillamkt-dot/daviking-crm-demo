@@ -223,8 +223,9 @@
   /* ===== TARJETA DE LEAD ===== */
   .leadcard{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:14px 15px;box-shadow:var(--shadow);cursor:grab;transition:transform .12s,border-color .12s,background .12s;position:relative;overflow:hidden}
   .leadcard:active{cursor:grabbing}
-  .leadcard.dragging{opacity:.45;transform:scale(.98)}
-  .kcol-cards.dragover{outline:2px dashed var(--brand,#34D399);outline-offset:-3px;background:rgba(52,211,153,.07);border-radius:11px;min-height:60px}
+  .leadcard.dragging{opacity:.4}
+  .drag-ghost{position:fixed;left:0;top:0;pointer-events:none;z-index:400;opacity:.92;transform:rotate(2.5deg);box-shadow:0 14px 34px rgba(0,0,0,.45);margin:0;width:260px}
+  .kcol.dragover{outline:2px dashed var(--brand,#34D399);outline-offset:-3px;background:rgba(52,211,153,.07)}
   .leadcard:hover{transform:translateY(-2px);background:var(--surface-2);border-color:var(--line-2)}
   .leadcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px}
   .leadcard.s-agendada::before{background:#5BAEF6}
@@ -1413,13 +1414,47 @@ function vsEquipoHTML(){
 }
 
 /* ===================== RENDER: PIPELINE (KANBAN) ===================== */
-/* ----- Drag & drop del kanban (mover lead a otra etapa arrastrando) ----- */
-let _dragId=null;
-function dragStart(e,id){ _dragId=id; try{ e.dataTransfer.effectAllowed="move"; e.dataTransfer.setData("text/plain",id); }catch(_){} setTimeout(()=>{ if(e.target&&e.target.classList) e.target.classList.add("dragging"); },0); }
-function dragEnd(e){ _dragId=null; if(e.target&&e.target.classList) e.target.classList.remove("dragging"); document.querySelectorAll(".kcol-cards.dragover").forEach(x=>x.classList.remove("dragover")); }
-function dragOver(e){ e.preventDefault(); try{ e.dataTransfer.dropEffect="move"; }catch(_){} e.currentTarget.classList.add("dragover"); }
-function dragLeave(e){ if(e.currentTarget===e.target) e.currentTarget.classList.remove("dragover"); }
-function dropEnCol(e,est){ e.preventDefault(); e.currentTarget.classList.remove("dragover"); const id=_dragId||(e.dataTransfer&&e.dataTransfer.getData("text/plain")); _dragId=null; if(!id) return; const l=L(id); if(!l||l.estado===est) return; setEstado(id,est); }
+/* ----- Mover leads arrastrando (pointer events: fiable + fantasma + auto-scroll) ----- */
+let _drag=null, _suppressClick=false;
+function leadClick(id){ if(_suppressClick){ return; } openLead(id); }
+function colBajoCursor(x,y){ const el=document.elementFromPoint(x,y); return el?el.closest(".kcol"):null; }
+function cardPointerDown(e,id){
+  if(e.button!==0) return;
+  if(e.pointerType && e.pointerType!=="mouse") return;                 // táctil: usar botones, no arrastrar
+  if(e.target.closest("button,.chk,.lchecks,.lactions,.lcash")) return; // no arrastrar desde botones/checks
+  _drag={ id, x0:e.clientX, y0:e.clientY, moved:false, card:e.currentTarget, ghost:null };
+  window.addEventListener("pointermove", cardPointerMove);
+  window.addEventListener("pointerup", cardPointerUp, {once:true});
+}
+function cardPointerMove(e){
+  if(!_drag) return;
+  if(!_drag.moved){
+    if(Math.abs(e.clientX-_drag.x0)+Math.abs(e.clientY-_drag.y0) < 6) return;
+    _drag.moved=true; _drag.card.classList.add("dragging");
+    const g=_drag.card.cloneNode(true); g.className="leadcard drag-ghost"; g.style.width=_drag.card.offsetWidth+"px";
+    document.body.appendChild(g); _drag.ghost=g; document.body.style.userSelect="none";
+  }
+  _drag.ghost.style.left=(e.clientX+10)+"px"; _drag.ghost.style.top=(e.clientY+10)+"px";
+  const col=colBajoCursor(e.clientX,e.clientY);
+  document.querySelectorAll(".kcol.dragover").forEach(x=>x.classList.remove("dragover"));
+  if(col) col.classList.add("dragover");
+  const k=document.getElementById("kanban");
+  if(k){ const r=k.getBoundingClientRect(), edge=80; if(e.clientX>r.right-edge) k.scrollLeft+=24; else if(e.clientX<r.left+edge) k.scrollLeft-=24; }
+}
+function cardPointerUp(e){
+  window.removeEventListener("pointermove", cardPointerMove);
+  if(!_drag) return;
+  const moved=_drag.moved, id=_drag.id, ghost=_drag.ghost, card=_drag.card; _drag=null;
+  if(ghost) ghost.remove();
+  if(card) card.classList.remove("dragging");
+  document.querySelectorAll(".kcol.dragover").forEach(x=>x.classList.remove("dragover"));
+  document.body.style.userSelect="";
+  if(moved){
+    _suppressClick=true; setTimeout(()=>{ _suppressClick=false; },350);
+    const col=colBajoCursor(e.clientX,e.clientY);
+    if(col && col.dataset.est){ const l=L(id); if(l && l.estado!==col.dataset.est) setEstado(id, col.dataset.est); }
+  }
+}
 function renderPipeline(){
   const ci = CLOSER_INFO[CLOSER];
   document.getElementById("pipe-eyebrow").textContent = esGeneral() ? "Pipeline · Equipo (todos)" : "Pipeline · "+ci.nombre;
@@ -1433,9 +1468,9 @@ function renderPipeline(){
   document.getElementById("kanban").innerHTML = cols.map(est=>{
     const inCol = leads.filter(l=>l.estado===est);
     const e = ESTADOS[est];
-    return `<div class="kcol">
+    return `<div class="kcol" data-est="${est}">
       <div class="kcol-h"><span class="kdot" style="background:${e.dot}"></span><span class="kt">${e.t}</span><span class="kc">${inCol.length}</span></div>
-      <div class="kcol-cards" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropEnCol(event,'${est}')">
+      <div class="kcol-cards">
         ${inCol.length? inCol.map(l=>leadCardHTML(l)).join("") : `<div class="kc-empty">— suelta aquí —</div>`}
       </div>
     </div>`;
@@ -1471,7 +1506,7 @@ function leadCardHTML(l){
   const ownTag = esGeneral()
     ? `<span class="owntag" title="Closer: ${CLOSER_INFO[l.closer].corto}"><span class="avatar sm ${CLOSER_INFO[l.closer].cls}">${CLOSER_INFO[l.closer].ini}</span>${CLOSER_INFO[l.closer].corto}</span>`
     : "";
-  return `<div class="leadcard s-${l.estado}" draggable="true" ondragstart="dragStart(event,'${l.id}')" ondragend="dragEnd(event)" onclick="openLead('${l.id}')">
+  return `<div class="leadcard s-${l.estado}" onpointerdown="cardPointerDown(event,'${l.id}')" onclick="leadClick('${l.id}')">
     <div class="lct">
       <span class="avatar sm ${CLOSER_INFO[l.closer].cls}">${iniciales(l.nombre)}</span>
       <span class="lnm">${l.nombre}</span>
