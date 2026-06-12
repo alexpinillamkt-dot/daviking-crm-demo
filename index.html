@@ -1304,13 +1304,22 @@ function citaParts(start){
 async function cargarCitasGHL(){
   if(!GHL.url || !GHL.key || GHL_CITAS_CARGADAS) return;
   try{
-    const r = await fetch(GHL.url+"/appointments?key="+encodeURIComponent(GHL.key));
-    if(!r.ok) throw new Error("HTTP "+r.status);
-    const data = await r.json();
-    if(!data || !Array.isArray(data.events)) return;   // no marca cargado: permite reintentar
+    // Las citas se piden por TANDAS (offset 0,45,90…) hasta cubrir todos los leads:
+    // GHL solo sirve las citas futuras por contacto, y el Worker no puede leer >45 de golpe.
+    let todas = [], offset = 0, hayMas = true, guarda = 0;
+    while(hayMas && guarda < 8){
+      const r = await fetch(GHL.url+"/appointments?key="+encodeURIComponent(GHL.key)+"&offset="+offset+"&batch=45");
+      if(!r.ok) throw new Error("HTTP "+r.status);
+      const data = await r.json();
+      if(!data || !Array.isArray(data.events)) break;
+      todas = todas.concat(data.events);
+      hayMas = !!data.hayMas;
+      offset += (data.batch || 45);
+      guarda++;
+    }
     GHL_CITAS_CARGADAS = true;
     const porContacto = {};
-    data.events.forEach(ev=>{
+    todas.forEach(ev=>{
       const cid = ev.contactId; if(!cid) return;
       const st = (ev.status||"").toLowerCase();
       if(st==="cancelled"||st==="canceled"||st==="invalid") return;   // ignora citas canceladas
