@@ -1337,7 +1337,8 @@ async function cargarCitasGHL(){
       if(elegida){ l.llamada = elegida.ymd; l.llamadaHora = elegida.hora; if(!l.agendado) l.agendado = elegida.ymd; tocados++; }
     });
     if(tocados){ rerender(); }
-  }catch(e){ GHL_CITAS_CARGADAS = false; }
+    if(typeof toast==="function") toast("📅 "+todas.length+" citas de GHL · "+tocados+" leads con fecha ("+guarda+" tandas)");
+  }catch(e){ GHL_CITAS_CARGADAS = false; if(typeof toast==="function") toast("⚠️ Error cargando citas de GHL"); }
 }
 async function enriquecerLead(cid){
   GHL_DETALLE[cid] = null;   // sentinel "en carga" (el drawer muestra "Cargando…")
