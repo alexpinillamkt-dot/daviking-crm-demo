@@ -1281,6 +1281,23 @@ function startToYmd(start){
   if(isNaN(d.getTime())) return "";
   return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 }
+/* Convierte el 'start' de una cita (epoch o ISO, en cualquier zona) en {ymd, hora, ts}
+   con la fecha y hora REALES de España (Europe/Madrid), como las ve el closer en GHL. */
+const TZ_CITA = "Europe/Madrid";
+function citaParts(start){
+  if(start==null || start==="") return null;
+  const d = new Date(typeof start==="string" && /^\d+$/.test(start) ? Number(start) : start);
+  if(isNaN(d.getTime())) return null;
+  let ymd, hora;
+  try{
+    ymd  = new Intl.DateTimeFormat("en-CA",{timeZone:TZ_CITA,year:"numeric",month:"2-digit",day:"2-digit"}).format(d);
+    hora = new Intl.DateTimeFormat("es-ES",{timeZone:TZ_CITA,hour:"2-digit",minute:"2-digit",hour12:false}).format(d);
+  }catch(e){
+    ymd  = d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    hora = String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  }
+  return { ymd, hora, ts: d.getTime() };
+}
 /* Carga las citas reales del calendario y asigna lead.llamada por contactId.
    Si un lead tiene varias citas, usa la más próxima en el futuro; si todas son
    pasadas, usa la última. Solo en modo conectado (con leads reales de GHL). */
@@ -1295,16 +1312,20 @@ async function cargarCitasGHL(){
     const porContacto = {};
     data.events.forEach(ev=>{
       const cid = ev.contactId; if(!cid) return;
-      const fecha = startToYmd(ev.start); if(!fecha) return;
-      (porContacto[cid] = porContacto[cid] || []).push(fecha);
+      const st = (ev.status||"").toLowerCase();
+      if(st==="cancelled"||st==="canceled"||st==="invalid") return;   // ignora citas canceladas
+      const p = citaParts(ev.start); if(!p) return;
+      (porContacto[cid] = porContacto[cid] || []).push(p);
     });
     let tocados = 0;
+    const ahora = Date.now();
     LEADS.forEach(l=>{
-      const fechas = porContacto[l.contactId];
-      if(!fechas || !fechas.length) return;
-      const futuras = fechas.filter(f=>f>=HOY).sort();
-      const elegida = futuras.length ? futuras[0] : fechas.slice().sort()[fechas.length-1];
-      if(elegida){ l.llamada = elegida; if(!l.agendado) l.agendado = elegida; tocados++; }
+      const arr = porContacto[l.contactId];
+      if(!arr || !arr.length) return;
+      // la cita vigente = la próxima futura; si todas son pasadas, la más reciente
+      const futuras = arr.filter(p=>p.ts>=ahora).sort((a,b)=>a.ts-b.ts);
+      const elegida = futuras.length ? futuras[0] : arr.slice().sort((a,b)=>b.ts-a.ts)[0];
+      if(elegida){ l.llamada = elegida.ymd; l.llamadaHora = elegida.hora; if(!l.agendado) l.agendado = elegida.ymd; tocados++; }
     });
     if(tocados){ rerender(); }
   }catch(e){ GHL_CITAS_CARGADAS = false; }
@@ -1728,11 +1749,10 @@ function renderPipeline(){
 /* ===================== TARJETA DE LEAD ===================== */
 function leadCardHTML(l){
   const cash = cashDeLead(l);
+  const horaTxt = l.llamadaHora ? " · "+l.llamadaHora : "";
   const cuando = l.estado==="pagohecho" ? "Cerrado "+fmtCorta(l.fechaCierre||l.llamada)
     : !fechaValida(l.llamada) ? "Sin fecha de llamada"
-    : l.llamada===HOY ? "Llamada HOY"
-    : esFuturo(l.llamada) ? "Llamada "+etiquetaCuando(l.llamada,"")
-    : "Llamada "+fmtCorta(l.llamada);
+    : (l.llamada===HOY ? "Hoy " : diffDias(HOY,l.llamada)===1 ? "Mañana " : esFuturo(l.llamada) ? diaSemana(l.llamada).slice(0,3)+" " : "") + fmtCorta(l.llamada) + horaTxt;
   // urgencia visual por días que faltan para la llamada
   let cuandoCls="";
   if(fechaValida(l.llamada) && ESTADOS[l.estado]?.grupo==="activo" && l.estado!=="pagohecho"){
@@ -1968,7 +1988,7 @@ function drawerBody(l){
       <div class="kv"><div class="k">Email</div><div class="v copy" onclick="copiar('${l.email}')">${l.email||'—'}<span class="cpi">⧉ copiar</span></div></div>
       <div class="kv"><div class="k">Teléfono</div><div class="v copy" onclick="copiar('${l.tel}')">${l.tel||'—'}<span class="cpi">⧉ copiar</span></div></div>
       <div class="kv"><div class="k">Agendó</div><div class="v">${fechaCell(l.agendado)}</div></div>
-      <div class="kv"><div class="k">Llamada</div><div class="v">${fechaCell(l.llamada)}</div></div>
+      <div class="kv"><div class="k">Llamada</div><div class="v">${fechaCell(l.llamada)}${l.llamadaHora?" · <b>"+l.llamadaHora+"</b>":""}</div></div>
       <div class="kv"><div class="k">Presupuesto declarado</div><div class="v">${ph(l.presupuesto)}</div></div>
       <div class="kv"><div class="k">Nivel / contexto</div><div class="v">${ph(l.nivel)}</div></div>
     </div>
