@@ -451,6 +451,11 @@
   .ten-pill.rojo{background:var(--red-bg);color:var(--red);border-color:var(--red-line)}
   .note{color:var(--muted);font-size:12px;margin:0 0 14px;line-height:1.55}
   .note b{color:var(--ink)}
+  /* aviso bien visible: datos de referencia (no en tiempo real) */
+  .refbanner{display:flex;align-items:flex-start;gap:11px;background:var(--amber-bg);border:1px solid var(--amber-line);border-radius:13px;padding:13px 16px;margin:6px 0 20px;font-size:13px;color:#F6E2C2;line-height:1.55}
+  .refbanner .rbi{font-size:18px;line-height:1.2;flex-shrink:0}
+  .refbanner b{color:#fff}
+  .refbanner .rbtag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--amber);border:1px dashed var(--amber-line);border-radius:6px;padding:2px 7px;margin-left:4px}
 
   .sparkbars{display:flex;align-items:flex-end;gap:10px;height:120px;padding:10px 4px 0}
   .sparkbars .colb{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;cursor:pointer}
@@ -497,6 +502,7 @@
   .callitem{text-align:left;font-family:inherit;width:100%;background:var(--bg-2);border:1px solid var(--line);border-radius:11px;padding:11px 12px;cursor:pointer;transition:all .12s;position:relative;overflow:hidden}
   .callitem::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px}
   .callitem.ganada::before{background:var(--green)} .callitem.perdida::before{background:var(--red)} .callitem.seguimiento::before{background:var(--amber)} .callitem.noshow::before{background:var(--red)}
+  .callitem.nocualificado::before{background:#94A3B8} .callitem.cancelado::before{background:#7C8499}
   .callitem:hover{background:var(--surface-2);border-color:var(--line-2)}
   .callitem.sel{background:var(--brand-soft);border-color:var(--brand-line)}
   .callitem .cin{font-weight:650;font-size:13px}
@@ -504,6 +510,7 @@
   .callpanel{background:var(--bg-2);border:1px solid var(--line);border-radius:13px;padding:18px 20px}
   .res-pill{font-size:11px;font-weight:700;padding:3px 10px;border-radius:8px}
   .res-pill.ganada{background:var(--green-bg);color:var(--green)} .res-pill.perdida{background:var(--red-bg);color:var(--red)} .res-pill.seguimiento{background:var(--amber-bg);color:var(--amber)} .res-pill.noshow{background:var(--red-bg);color:var(--red)}
+  .res-pill.nocualificado{background:var(--surface-3);color:var(--ink-2)} .res-pill.cancelado{background:var(--surface-3);color:var(--muted)}
   .keymoment{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 13px;font-size:12.5px;color:var(--ink-2);line-height:1.5;border-left:3px solid var(--brand)}
   .callout{background:linear-gradient(180deg,rgba(52,211,153,.1),rgba(52,211,153,.03));border:1px solid var(--brand-line);border-radius:12px;padding:14px 16px;color:var(--ink);font-size:13.5px;line-height:1.6}
   .callout b{color:#fff}
@@ -523,10 +530,28 @@
   }
   @media (max-width:760px){
     .sidebar{display:none}
-    .content{padding:22px 18px 80px}
+    .content{padding:22px 18px 92px}
     .topbar{padding:12px 18px;flex-wrap:wrap}
     .tstage{grid-template-columns:110px 1fr}
+    .mobilenav{display:flex}
+    .pipe-toolbar{gap:9px}
+    #buscar-lead{flex:1 1 100%!important}
   }
+  /* ===== NAV INFERIOR (solo móvil): para llegar a Pipeline/Agenda/Ventas sin sidebar ===== */
+  .mobilenav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(11,14,20,.96);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line-2);padding:6px 6px calc(6px + env(safe-area-inset-bottom));justify-content:space-around}
+  .mobilenav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 4px;border-radius:11px;color:var(--ink-2);font-size:10px;font-weight:650;cursor:pointer;position:relative}
+  .mobilenav a .mni{font-size:19px;line-height:1}
+  .mobilenav a.active{color:#fff;background:var(--brand-soft)}
+  .mobilenav a .mnc{position:absolute;top:2px;right:calc(50% - 22px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--red-bg);color:var(--red);font-size:9px;font-weight:700;display:none;align-items:center;justify-content:center}
+  .mobilenav a .mnc.show{display:flex}
+  /* ===== TÁCTIL: cursor, tamaño de botones y scroll del drawer ===== */
+  @media (pointer:coarse){
+    .leadcard{cursor:pointer}
+    .btn.sm{padding:10px 12px;min-height:44px}
+    .leadcard .lactions{gap:8px}
+    .notes-ta{resize:none}
+  }
+  .dbody{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 </style>
 </head>
 <body>
@@ -561,7 +586,10 @@
             <button data-closer="alvaro"><span class="avatar sm alvaro">ÁL</span> Álvaro</button>
           </div>
         </div>
+        <span id="last-sync" style="font-size:11px;color:var(--muted)"></span>
+        <button class="help-btn" id="btn-sync" onclick="actualizarGHL()" title="Recargar datos de GHL" style="display:none">🔄 Actualizar</button>
         <button class="help-btn" onclick="openGuide()">📘 Ayuda</button>
+        <button class="help-btn" id="btn-logout" onclick="cerrarSesion()" title="Cerrar sesión" style="display:none">🚪 Salir</button>
       </div>
     </div>
     <div class="maq-banner">
@@ -577,7 +605,7 @@
           <div>
             <p class="h-eyebrow" id="ov-eyebrow">Closer · Pascu Vargas</p>
             <h1 class="h-big" id="ov-title">Hola, Pascu 👋</h1>
-            <p class="h-sub">Periodo: <b>1 – 31 de mayo 2026</b> · Hoy es viernes 29 de mayo</p>
+            <p class="h-sub" id="ov-periodo">Periodo actual</p>
           </div>
           <button class="btn primary" onclick="go('ventas')">Ver Ventas &amp; KPIs →</button>
         </div>
@@ -615,8 +643,13 @@
             <button data-f="todos" class="on">Todos</button>
             <button data-f="activos">Activos</button>
             <button data-f="cerrados">Cerrados</button>
+            <button data-f="hoy">Hoy</button>
+            <button data-f="semana">Esta semana</button>
           </div>
-          <div style="margin-left:auto;font-size:12px;color:var(--muted)">👉 Toca una tarjeta para ver la info completa de la llamada.</div>
+          <input id="buscar-lead" type="search" placeholder="🔍 Buscar por nombre, email o teléfono…" autocomplete="off"
+            style="flex:0 1 280px;padding:8px 12px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:13px;font-family:inherit;outline:none">
+          <button class="btn sm" id="btn-sync-pipe" onclick="actualizarGHL()" title="Volver a traer leads y citas de GHL">🔄 Actualizar</button>
+          <div style="margin-left:auto;font-size:12px;color:var(--muted)">👉 Arrastra con el ratón o usa los botones. Toca una tarjeta para ver la info.</div>
         </div>
         <div class="kanban" id="kanban"></div>
       </section>
@@ -625,7 +658,7 @@
       <section class="view" id="view-agenda">
         <p class="h-eyebrow" id="ag-eyebrow">Agenda · Pascu Vargas</p>
         <h1 class="h-big">Agenda de llamadas 📅</h1>
-        <p class="h-sub">Separamos lo que viene (validar / confirmar) de lo que ya pasó (registrar resultado). Hoy: <b>viernes 29 de mayo 2026</b>.</p>
+        <p class="h-sub">Separamos lo que viene (validar / confirmar) de lo que ya pasó (registrar resultado). Hoy: <b id="ag-hoy"></b>.</p>
         <div class="zone">
           <div class="zone-h future">
             <div class="zi">🔜</div>
@@ -660,6 +693,15 @@
       </section>
 
     </div>
+
+    <!-- ===== NAV INFERIOR (solo móvil) ===== -->
+    <nav class="mobilenav" id="mobilenav">
+      <a data-view="overview"><span class="mni">🏠</span>Panel<span class="mnc" id="mnc-hoy">0</span></a>
+      <a data-view="pipeline"><span class="mni">🗂️</span>Pipeline</a>
+      <a data-view="agenda"><span class="mni">📅</span>Agenda<span class="mnc" id="mnc-agenda">0</span></a>
+      <a data-view="ventas"><span class="mni">📈</span>Ventas</a>
+      <a data-view="guia"><span class="mni">📘</span>Ayuda</a>
+    </nav>
   </div>
 </div>
 
@@ -693,10 +735,12 @@
 const HOY = (function(){ const d=new Date(); const p=n=>(""+n).padStart(2,"0"); return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate()); })(); // fecha REAL de hoy (el CRM ya lee datos reales de GHL)
 const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 const MESES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+function fechaValida(s){ return typeof s==="string" && /^\d{4}-\d{2}-\d{2}$/.test(s); }
 function ymd(s){const [y,m,d]=s.split("-").map(Number);return {y,m,d};}
-function fmtFecha(s){const {y,m,d}=ymd(s);return d+" "+MESES[m-1]+" "+y;}
-function fmtCorta(s){const {m,d}=ymd(s);return d+" "+MESES[m-1];}
+function fmtFecha(s){ if(!fechaValida(s)) return "—"; const {y,m,d}=ymd(s);return d+" "+MESES[m-1]+" "+y;}
+function fmtCorta(s){ if(!fechaValida(s)) return "—"; const {m,d}=ymd(s);return d+" "+MESES[m-1];}
 function diaSemana(s){
+  if(!fechaValida(s)) return "—";
   const {y,m,d}=ymd(s);
   let mm=m,yy=y; if(mm<3){mm+=12;yy--;}
   const k=yy%100,j=Math.floor(yy/100);
@@ -705,13 +749,14 @@ function diaSemana(s){
   return DIAS[map[h]];
 }
 function diffDias(a,b){
-  const da=ymd(a), db=ymd(b);
-  const toN=(o)=> (o.y*372)+(o.m*31)+o.d;
-  return toN(db)-toN(da);
+  if(!fechaValida(a) || !fechaValida(b)) return 0;
+  const toTs=(s)=>{ const [y,m,d]=s.split("-").map(Number); return Date.UTC(y,m-1,d); };
+  return Math.round((toTs(b)-toTs(a))/86400000);
 }
-function esFuturo(s){return s>HOY;}
-function esPasado(s){return s<HOY;}
+function esFuturo(s){return fechaValida(s) && s>HOY;}
+function esPasado(s){return fechaValida(s) && s<HOY;}
 function etiquetaCuando(s,prefix){
+  if(!fechaValida(s)) return prefix+"sin fecha";
   if(s===HOY) return prefix+"hoy";
   if(s>HOY){ return prefix+"el "+diaSemana(s).slice(0,3)+" "+fmtCorta(s);}
   return prefix+"el "+fmtCorta(s);
@@ -760,6 +805,13 @@ function fechaConOffset(baseYmd, days){
   return y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0");
 }
 function eur(n){ return Number(n).toLocaleString("es-ES")+" €"; }
+const MESES_LARGO = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+function fechaHumana(s){ if(!fechaValida(s)) return "—"; const {y,m,d}=ymd(s); return diaSemana(s)+" "+d+" de "+MESES_LARGO[m-1]+" "+y; }
+function periodoMesActual(){
+  const {y,m}=ymd(HOY);
+  const dim=[31,(y%4===0&&(y%100!==0||y%400===0))?29:28,31,30,31,30,31,31,30,31,30,31][m-1];
+  return "1 – "+dim+" de "+MESES_LARGO[m-1]+" "+y;
+}
 
 /* ===================== ESTADOS DEL PIPELINE (11 etapas reales de GHL) ===================== */
 const ESTADOS = {
@@ -776,9 +828,16 @@ const ESTADOS = {
   perdida:       {t:"Pérdida",         color:"#6B7280", dot:"#6B7280", grupo:"cerrado"},
 };
 const ORDEN_KANBAN = ["agendada","cualificado","reserva","realizada","seguimiento","reagendado","pagohecho","nocualificado","cancelado","noasistencia","perdida"];
-/* Mapeo de claves antiguas -> nuevas (para normalizar lo que llegue del Worker durante el despliegue) */
-const ESTADO_LEGACY = { nuevo:"agendada", validado:"cualificado", confirmado:"reserva", realizada:"realizada", seguimiento:"seguimiento", ganado:"pagohecho", nocompra:"perdida", noshow:"noasistencia", reagendado:"reagendado" };
-function normalizarEstado(e){ return ESTADO_LEGACY[e] || (ESTADOS[e] ? e : "agendada"); }
+/* Mapeo de claves ANTIGUAS de GHL -> claves reales de ESTADOS.
+   Solo debe contener claves que NO existan ya en ESTADOS (las que sí existen
+   se resuelven solas por la segunda rama de normalizarEstado). */
+const ESTADO_LEGACY = { nuevo:"agendada", validado:"cualificado", confirmado:"reserva", ganado:"pagohecho", nocompra:"perdida", noshow:"noasistencia" };
+function normalizarEstado(e){
+  if(ESTADO_LEGACY[e]) return ESTADO_LEGACY[e];
+  if(ESTADOS[e]) return e;
+  if(e){ try{ console.warn("[CRM] Estado desconocido recibido de GHL:", e); if(typeof toast==="function") toast("⚠️ Estado desconocido «"+e+"» de GHL — mapeado a Agendada"); }catch(_){} }
+  return "agendada";
+}
 
 /* ===================== DATOS INVENTADOS · LEADS ===================== */
 let LEADS = [
@@ -826,8 +885,7 @@ let LEADS = [
      {q:"¿Por qué AHORA?", a:"Mi hija ya tiene 1 año, es mi momento"},
      {q:"Del 1 al 10, ¿compromiso?", a:"9"},
    ],
-   resultado:"pendiente",
-   callRes:"seguimiento", callDur:"26 min",
+   callDur:"26 min",
    momentoClave:'[18:20] "Me encanta el enfoque, ¿puedo fraccionarlo? Lo confirmo hoy tras hablar con mi pareja."',
    resumen:[
      "Andrea busca recomposición postparto con <b>muy poco tiempo</b> (45 min, 3 días/sem).",
@@ -860,8 +918,7 @@ let LEADS = [
      {q:"¿Por qué AHORA?", a:"El médico me avisó del colesterol"},
      {q:"Del 1 al 10, ¿compromiso?", a:"6"},
    ],
-   resultado:"pendiente",
-   callRes:"seguimiento", callDur:"19 min",
+   callDur:"19 min",
    momentoClave:'[12:05] "No mucho, depende de lo que sea la verdad" → objeción de precio recurrente.',
    resumen:[
      "Javier quiere salud general y perder abdomen; motivación <b>médica</b>, no estética.",
@@ -892,9 +949,8 @@ let LEADS = [
      {q:"¿Por qué AHORA?", a:"Cumplo 40 y quiero llegar en mi mejor forma"},
      {q:"Del 1 al 10, ¿compromiso?", a:"10"},
    ],
-   resultado:"ganado",
    formatoPago:"anual-2", fechaCierre:"2026-05-19",
-   callRes:"ganada", callDur:"22 min",
+   callDur:"22 min",
    momentoClave:'[15:30] "Me da igual el precio si funciona. Hazlo en dos pagos. Vamos."',
    resumen:[
      "Sara buscaba un <b>programa anual premium</b>, harta de planes genéricos.",
@@ -923,9 +979,8 @@ let LEADS = [
      {q:"¿Por qué AHORA?", a:"Quiero ver el músculo que tengo escondido"},
      {q:"Del 1 al 10, ¿compromiso?", a:"9"},
    ],
-   resultado:"ganado",
    formatoPago:"nut-1", fechaCierre:"2026-05-15",
-   callRes:"ganada", callDur:"18 min",
+   callDur:"18 min",
    momentoClave:'[10:10] "Me parece honesto. ¿Cuánto sería? 1.500 €, dale, pago ahora."',
    resumen:[
      "Pablo entrena solo y bien; su problema es <b>únicamente la nutrición</b>.",
@@ -954,8 +1009,7 @@ let LEADS = [
      {q:"¿Por qué AHORA?", a:"Quiero verme bien en la playa"},
      {q:"Del 1 al 10, ¿compromiso?", a:"5"},
    ],
-   resultado:"noshow",
-   callRes:"noshow", callDur:"0 min",
+   callDur:"0 min",
    momentoClave:"No se conectó. Sin confirmación previa pese a 2 recordatorios.",
    resumen:[
      "Elena <b>no asistió</b> a la llamada agendada.",
@@ -999,8 +1053,7 @@ let LEADS = [
      {q:"¿Por qué AHORA?", a:"Quiero el cuerpo de mi vida a los 30"},
      {q:"Del 1 al 10, ¿compromiso?", a:"10"},
    ],
-   resultado:"pendiente",
-   callRes:"seguimiento", callDur:"23 min",
+   callDur:"23 min",
    momentoClave:'[16:40] "Me vale. Enséñame el plan de entrenos antes de pagar."',
    resumen:[
      "Roberto quiere ganar <b>8 kg de músculo limpio</b>, muy decidido.",
@@ -1027,9 +1080,8 @@ let LEADS = [
      {q:"¿Por qué AHORA?", a:"Boda en noviembre"},
      {q:"Del 1 al 10, ¿compromiso?", a:"10"},
    ],
-   resultado:"ganado",
    formatoPago:"sem-2", fechaCierre:"2026-05-17",
-   callRes:"ganada", callDur:"20 min",
+   callDur:"20 min",
    momentoClave:'[13:15] "¿Puedo pagarlo en dos veces? Hecho, vamos a por ello."',
    resumen:[
      "Marta se casa en 6 meses y quiere llegar definida; <b>deadline emocional fuerte</b>.",
@@ -1123,7 +1175,11 @@ function leadStore(id){ if(!STORE[id]) STORE[id]={}; return STORE[id]; }
 function L(id){
   const base = LEADS.find(x=>x.id===id) || {};
   const det = (base.contactId && GHL_DETALLE[base.contactId]) || {};
-  return Object.assign({}, base, det, STORE[id]||{});
+  const merged = Object.assign({}, base, det, STORE[id]||{});
+  // Sanea estados obsoletos guardados en localStorage o llegados de GHL al vuelo.
+  if(merged.estado) merged.estado = normalizarEstado(merged.estado);
+  else merged.estado = "agendada";
+  return merged;
 }
 function setLead(id, patch){ Object.assign(leadStore(id), patch); saveStore(); }
 
@@ -1133,25 +1189,88 @@ function setLead(id, patch){ Object.assign(leadStore(id), patch); saveStore(); }
 const GHL = { url:"https://daviking-ghl-bridge.alexpinillamkt.workers.dev", key:"" };
 let GHL_DETALLE = {};   // caché de fichas (/lead) por contactId
 let GHL_CITAS_CARGADAS = false;   // evita repetir el fetch de /appointments
+let GHL_CONECTADO = false;        // true cuando hay leads reales cargados
+let lastSync = null;              // timestamp (ms) de la última sincronización con éxito
+const GHL_MOVING = new Set();     // ids de leads con un /move en vuelo (evita carreras)
+/* Actualiza los banners de demo según el estado real de conexión. */
+function actualizarBannersConexion(){
+  const conectado = GHL_CONECTADO;
+  const maq = document.querySelector(".maq-banner");
+  const badge = document.querySelector(".demo-badge");
+  if(maq){
+    if(conectado){
+      maq.style.display="none";
+    } else {
+      maq.style.display="";
+    }
+  }
+  if(badge){
+    if(conectado){
+      badge.innerHTML = "<b>CONECTADO · GHL real</b><br>Datos en vivo. Los cambios se escriben en GoHighLevel. Las métricas de Ventas &amp; KPIs son estimadas hasta integrar el histórico.";
+      badge.style.borderColor = "var(--brand-line)";
+      badge.style.background = "var(--brand-soft)";
+    } else {
+      badge.innerHTML = "<b>MAQUETA · datos de prueba</b><br>Diseño a medida para Daviking. Sin conexión real a GHL, Calendly ni Fathom. Las acciones se guardan solo en este navegador.";
+      badge.style.borderColor = "";
+      badge.style.background = "";
+    }
+  }
+  const ls=document.getElementById("last-sync");
+  if(ls){ ls.textContent = lastSync ? ("Última sync: "+new Date(lastSync).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})) : ""; }
+  const lo=document.getElementById("btn-logout"); if(lo) lo.style.display = (conectado||GHL.key) ? "" : "none";
+  const sy=document.getElementById("btn-sync"); if(sy) sy.style.display = (conectado||GHL.key) ? "" : "none";
+}
 function mapGhlLead(g){
-  return { id:g.id, contactId:g.contactId||"", closer:g.closer||"pascu", nombre:g.nombre||"Sin nombre",
+  return { id:g.id, opportunityId:g.opportunityId||g.id, contactId:g.contactId||"", closer:g.closer||"pascu", nombre:g.nombre||"Sin nombre",
     email:g.email||"", tel:g.tel||"", estado:normalizarEstado(g.estado||"agendada"),
     agendado:"", llamada:"", validada:false, confirmada:false, asistio:null,
     objetivo:"", nivel:"", presupuesto:"", origen:"GHL", dolor:"", form:[],
-    formatoPago:null, fechaSeguimiento:"", valor:g.valor||0, _ghl:true };
+    formatoPago:null, fechaSeguimiento:"", valor:g.valor||0, _ghl:true, _enriquecido:false };
 }
-async function conectarGHL(){
+let GHL_REFRESCANDO = false;     // evita refrescos solapados
+async function conectarGHL(opts){
+  opts = opts || {};
+  const esRefresco = !!opts.refresco;   // true = re-fetch manual desde el botón "Actualizar"
   if(!GHL.url) return;
   try{
     const r = await fetch(GHL.url+"/leads?key="+encodeURIComponent(GHL.key));
+    if(r.status===401){ cerrarSesion(); toast("⛔ Sesión caducada · vuelve a entrar"); return; }
+    if(!r.ok) throw new Error("HTTP "+r.status);
     const data = await r.json();
-    if(data && Array.isArray(data.leads) && data.leads.length){
+    if(!data || !Array.isArray(data.leads)){ toast("⚠️ Respuesta inesperada de GHL · usando datos de demo"); return; }
+    if(data.leads.length){
       LEADS = data.leads.map(mapGhlLead);
+      GHL_CONECTADO = true;
+      lastSync = Date.now();
+      GHL_CITAS_CARGADAS = false;   // permite recargar las citas tras refrescar leads
+      actualizarBannersConexion();
       rerender();
-      try{ if(typeof toast==="function") toast("🟢 Conectado a GHL · "+data.leads.length+" leads reales"); }catch(e){}
+      try{ if(typeof toast==="function") toast(esRefresco ? "🔄 Actualizado · "+data.leads.length+" leads" : "🟢 Conectado a GHL · "+data.leads.length+" leads reales"); }catch(e){}
       cargarCitasGHL();   // tras tener leads reales, rellena la agenda con las citas del calendario
+    } else {
+      toast(esRefresco ? "⚪ Actualizado · GHL sin leads (datos de demo)" : "⚪ GHL sin leads · mostrando datos de demo");
     }
-  }catch(e){ try{ if(typeof toast==="function") toast("⚪ Sin conexión a GHL · mostrando datos de demo"); }catch(_){} }
+  }catch(e){
+    const msg = String(e && e.message || e);
+    if(/401/.test(msg)){ cerrarSesion(); toast("⛔ Sesión caducada · vuelve a entrar"); }
+    else if(/HTTP/.test(msg)){ try{ toast("⚪ "+msg+" al conectar con GHL · datos de demo"); }catch(_){} }
+    else { try{ if(typeof toast==="function") toast("⚪ Sin conexión a GHL · mostrando datos de demo"); }catch(_){} }
+  }
+}
+/* Botón "🔄 Actualizar": re-fetch de leads + citas SIN recargar la página, con feedback. */
+async function actualizarGHL(){
+  if(GHL_REFRESCANDO) return;
+  GHL_REFRESCANDO = true;
+  const btns = [document.getElementById("btn-sync"), document.getElementById("btn-sync-pipe")].filter(Boolean);
+  const prev = btns.map(b=>b.textContent);
+  btns.forEach(b=>{ b.disabled=true; b.textContent="⏳ Actualizando…"; });
+  if(typeof toast==="function") toast("⏳ Actualizando datos de GHL…");
+  try{
+    await conectarGHL({refresco:true});
+  } finally {
+    btns.forEach((b,i)=>{ b.disabled=false; b.textContent=prev[i]; });
+    GHL_REFRESCANDO = false;
+  }
 }
 /* Convierte 'start' (epoch ms o ISO) a YYYY-MM-DD */
 function startToYmd(start){
@@ -1167,11 +1286,12 @@ function startToYmd(start){
    pasadas, usa la última. Solo en modo conectado (con leads reales de GHL). */
 async function cargarCitasGHL(){
   if(!GHL.url || !GHL.key || GHL_CITAS_CARGADAS) return;
-  GHL_CITAS_CARGADAS = true;
   try{
     const r = await fetch(GHL.url+"/appointments?key="+encodeURIComponent(GHL.key));
+    if(!r.ok) throw new Error("HTTP "+r.status);
     const data = await r.json();
-    if(!data || !Array.isArray(data.events)) return;
+    if(!data || !Array.isArray(data.events)) return;   // no marca cargado: permite reintentar
+    GHL_CITAS_CARGADAS = true;
     const porContacto = {};
     data.events.forEach(ev=>{
       const cid = ev.contactId; if(!cid) return;
@@ -1190,24 +1310,46 @@ async function cargarCitasGHL(){
   }catch(e){ GHL_CITAS_CARGADAS = false; }
 }
 async function enriquecerLead(cid){
+  GHL_DETALLE[cid] = null;   // sentinel "en carga" (el drawer muestra "Cargando…")
   try{
     const r = await fetch(GHL.url+"/lead?key="+encodeURIComponent(GHL.key)+"&contactId="+encodeURIComponent(cid));
+    if(!r.ok) throw new Error("HTTP "+r.status);
     const d = await r.json();
     GHL_DETALLE[cid] = { objetivo:d.objetivo||"", dolor:d.dolor||"", presupuesto:d.presupuesto||"",
-      nivel:d.situacion||"", form:Array.isArray(d.form)?d.form:[] };
+      nivel:d.situacion||"", form:Array.isArray(d.form)?d.form:[], _enriquecido:true };
     if(openLeadId){ const b=LEADS.find(x=>x.id===openLeadId); if(b && b.contactId===cid) openLead(openLeadId); }
-  }catch(e){}
+  }catch(e){
+    GHL_DETALLE[cid] = { _enriquecido:false, _fallo:true };   // marca como fallido (no reintenta solo)
+    try{ toast("⚠️ No se pudieron cargar los datos del lead desde GHL"); }catch(_){}
+    if(openLeadId){ const b=LEADS.find(x=>x.id===openLeadId); if(b && b.contactId===cid) openLead(openLeadId); }
+  }
 }
-/* --- Acceso con contraseña (la valida el Worker; no se guarda en el código) --- */
+/* --- Acceso con contraseña (la valida el Worker; no se guarda en el código) ---
+   La clave se guarda en sessionStorage (no persiste al cerrar el navegador) con
+   una marca de tiempo: caduca a las 12 h para no dejar la sesión abierta sin fin. */
+const PASS_TTL_MS = 12*60*60*1000; // 12 horas
+function guardarPass(pass){ try{ sessionStorage.setItem("dvk_pass", pass); sessionStorage.setItem("dvk_pass_ts", String(Date.now())); }catch(e){} }
+function leerPass(){
+  try{
+    const p = sessionStorage.getItem("dvk_pass"); if(!p) return "";
+    const ts = Number(sessionStorage.getItem("dvk_pass_ts")||0);
+    if(ts && (Date.now()-ts) > PASS_TTL_MS){ sessionStorage.removeItem("dvk_pass"); sessionStorage.removeItem("dvk_pass_ts"); return ""; }
+    return p;
+  }catch(e){ return ""; }
+}
 function iniciarGHL(){
   if(!GHL.url) return;
-  const saved = localStorage.getItem("dvk_pass");
+  const saved = leerPass();
   if(saved){ GHL.key=saved; conectarGHL(); }
   else { mostrarLogin(); }
 }
 function mostrarLogin(){ const o=document.getElementById("login-ov"); if(o){ o.style.display="flex"; const i=document.getElementById("login-pass"); if(i) i.focus(); } }
 function ocultarLogin(){ const o=document.getElementById("login-ov"); if(o) o.style.display="none"; }
-function cerrarSesion(){ localStorage.removeItem("dvk_pass"); GHL.key=""; mostrarLogin(); }
+function cerrarSesion(){
+  try{ sessionStorage.removeItem("dvk_pass"); sessionStorage.removeItem("dvk_pass_ts"); localStorage.removeItem("dvk_pass"); }catch(e){}
+  GHL.key=""; GHL_CONECTADO=false; GHL_CITAS_CARGADAS=false; lastSync=null;
+  actualizarBannersConexion(); mostrarLogin();
+}
 async function intentarLogin(){
   const inp=document.getElementById("login-pass"), err=document.getElementById("login-err");
   const pass=(inp.value||"").trim(); if(!pass) return;
@@ -1216,7 +1358,7 @@ async function intentarLogin(){
     const r=await fetch(GHL.url+"/leads?key="+encodeURIComponent(pass));
     if(r.status===401){ err.textContent="Contraseña incorrecta."; return; }
     if(!r.ok){ err.textContent="Error de conexión con el servidor."; return; }
-    GHL.key=pass; localStorage.setItem("dvk_pass",pass);
+    GHL.key=pass; guardarPass(pass);
     err.textContent=""; ocultarLogin(); conectarGHL();
   }catch(e){ err.textContent="No se pudo conectar."; }
 }
@@ -1230,8 +1372,21 @@ function getNota(id){ const all=cargarNotas(); if(all && all[id]!=null) return a
 
 /* ===================== ESTADO DE LA UI ===================== */
 let CLOSER = "general"; // arranca en GENERAL = agregado del equipo (Pascu + Álvaro)
+try{ const _sc=localStorage.getItem("dvk_closer"); if(_sc && (_sc==="general"||_sc==="pascu"||_sc==="alvaro")) CLOSER=_sc; }catch(e){}
 let VIEW = "overview";
 let PIPE_FILTER = "todos";
+let PIPE_BUSCAR = "";
+/* Lunes-domingo de la semana de HOY (en YYYY-MM-DD) */
+function rangoSemana(){
+  const {y,m,d}=ymd(HOY);
+  const base=new Date(Date.UTC(y,m-1,d));
+  const dow=base.getUTCDay(); // 0=domingo
+  const offLun = dow===0 ? -6 : 1-dow;
+  const lun=new Date(base.getTime()+offLun*86400000);
+  const dom=new Date(lun.getTime()+6*86400000);
+  const f=(dt)=> dt.getUTCFullYear()+"-"+String(dt.getUTCMonth()+1).padStart(2,"0")+"-"+String(dt.getUTCDate()).padStart(2,"0");
+  return { lun:f(lun), dom:f(dom) };
+}
 let openLeadId = null;
 let mkNivel = "mes";
 let mkIdx = { general:{dia:4,semana:3,mes:3}, pascu:{dia:4,semana:3,mes:3}, alvaro:{dia:4,semana:3,mes:3} };
@@ -1250,7 +1405,9 @@ function misLeads(){ return LEADS.map(x=>L(x.id)).filter(l=> esGeneral() || l.cl
 
 /* ===================== CASH COLLECTED MODELO ===================== */
 function cashDeLead(l){
-  if(l.estado!=="pagohecho" || !l.formatoPago) return null;
+  // Cuenta cash cuando hay un formato registrado y el lead está cerrado en pago
+  // o sigue en seguimiento con una reserva/señal ya cobrada (no se pierde la venta).
+  if((l.estado!=="pagohecho" && l.estado!=="seguimiento") || !l.formatoPago) return null;
   const f = findFormato(l.formatoPago);
   if(!f) return null;
   const cierre = l.fechaCierre || HOY;
@@ -1265,18 +1422,26 @@ function cashDeLead(l){
 }
 /* Si se pasa un closer concreto agrega solo sus leads; sin argumento usa misLeads()
    (que en GENERAL ya son TODOS los leads del equipo, suma de Pascu + Álvaro). */
+const ESTADOS_CON_LLAMADA = ["pagohecho","perdida","nocualificado","cancelado","noasistencia","realizada","seguimiento","reagendado"];
+const ESTADOS_PROXIMAS = ["agendada","cualificado","reserva","reagendado","seguimiento"];
 function totalesCash(closerFiltro){
-  let cobrado=0, proyectado=0, ventas=0, llamadas=0, proximas=0;
+  let cobrado=0, proyectado=0, ventas=0, llamadas=0, proximas=0, asistencias=0, llamadasPasadas=0;
   const fuente = closerFiltro ? LEADS.map(x=>L(x.id)).filter(l=>l.closer===closerFiltro) : misLeads();
   fuente.forEach(l=>{
     const c = cashDeLead(l);
     if(c){ cobrado+=c.cobrado; proyectado+=c.proyectado; ventas++; }
-    if(l.asistio===true || l.estado==="pagohecho" || l.estado==="perdida") llamadas++;
-    if(l.estado==="agendada"||l.estado==="cualificado"||l.estado==="reserva"||l.estado==="reagendado") proximas++;
+    if(l.asistio===true || ESTADOS_CON_LLAMADA.includes(l.estado)) llamadas++;
+    if(ESTADOS_PROXIMAS.includes(l.estado)) proximas++;
+    // show-up real derivado del pipeline: asistencias / llamadas con fecha pasada
+    if(esPasado(l.llamada) || l.estado==="realizada" || l.estado==="pagohecho"){
+      llamadasPasadas++;
+      if(l.asistio===true) asistencias++;
+    }
   });
   const comision = Math.round(proyectado*COMISION_PCT);       // comisión proyectada (si se cobra todo)
   const comisionCobrada = Math.round(cobrado*COMISION_PCT);   // comisión DEVENGADA = sobre lo COBRADO
-  return {cobrado, proyectado, pendiente:proyectado-cobrado, ventas, llamadas, proximas, comision, comisionCobrada};
+  const showUpReal = llamadasPasadas ? Math.round((asistencias/llamadasPasadas)*100) : 0;
+  return {cobrado, proyectado, pendiente:proyectado-cobrado, ventas, llamadas, proximas, comision, comisionCobrada, asistencias, llamadasPasadas, showUpReal};
 }
 
 /* ===================== TAREAS HOY / PENDIENTE ===================== */
@@ -1284,7 +1449,7 @@ function tareasHoy(){
   const out=[];
   misLeads().forEach(l=>{
     const cs = esGeneral() ? " · 👤 "+CLOSER_INFO[l.closer].corto : "";
-    if(l.llamada===HOY && (l.estado==="reserva")){ out.push({t:"Llamada HOY con "+l.nombre, m:"Confirmada · "+l.objetivo+cs, ico:"📞", cls:"green", id:l.id}); }
+    if(l.llamada===HOY && (l.estado==="reserva"||l.estado==="reagendado")){ out.push({t:"Llamada HOY con "+l.nombre, m:"Confirmada · "+(l.objetivo||"—")+cs, ico:"📞", cls:"green", id:l.id}); }
     if(esFuturo(l.llamada) && !l.validada && l.estado!=="reagendado"){ out.push({t:"Validar a "+l.nombre, m:"¿Cualifica? · llamada "+etiquetaCuando(l.llamada,"")+cs, ico:"✅", cls:"blue", id:l.id}); }
     if(esFuturo(l.llamada) && l.validada && !l.confirmada && l.estado!=="reagendado"){ out.push({t:"Confirmar asistencia de "+l.nombre, m:"Llamada "+etiquetaCuando(l.llamada,"")+cs, ico:"📌", cls:"amber", id:l.id}); }
     if(l.estado==="seguimiento" && l.fechaSeguimiento===HOY){ out.push({t:"🔔 Seguimiento HOY: "+l.nombre, m:"Toca contactar para cerrar"+cs, ico:"🔔", cls:"amber", id:l.id}); }
@@ -1312,9 +1477,11 @@ function renderOverview(){
     document.getElementById("ov-eyebrow").textContent = "Closer · "+ci.nombre;
     document.getElementById("ov-title").innerHTML = "Hola, "+ci.corto+" 👋";
   }
+  const ovp=document.getElementById("ov-periodo");
+  if(ovp) ovp.innerHTML = "Periodo: <b>"+periodoMesActual()+"</b> · Hoy es "+fechaHumana(HOY);
   const t = totalesCash();
   const cards=[
-    {hero:true, ico:"📞", n:t.llamadas, l:"Llamadas realizadas<br>este periodo", trend:"up", tt:"+3 vs abril"},
+    {hero:true, ico:"📞", n:t.llamadas, l:"Llamadas realizadas<br>este periodo", trend:"flat", tt:"show-up real: "+t.showUpReal+"% ("+t.asistencias+"/"+t.llamadasPasadas+")"},
     {cls:"", ico:"🔜", n:t.proximas, l:"Próximas / pendientes<br>en agenda", trend:"flat", tt:"a validar y confirmar"},
     {cls:"green", ico:"🏆", n:t.ventas, l:"Cierres en el pipeline<br>(con pago registrado)", trend:"up", tt:"ventas con pago registrado en el CRM"},
     {cls:"amber", ico:"💸", n:eur(t.cobrado), l:"Cash collected<br>cobrado", trend:"flat", tt:"de "+eur(t.proyectado)+" proyectado"},
@@ -1417,23 +1584,44 @@ function vsEquipoHTML(){
 
 /* ===================== RENDER: PIPELINE (KANBAN) ===================== */
 /* ----- Mover leads arrastrando (pointer CAPTURE: fiable en todo el kanban) ----- */
-let _drag=null, _suppressClick=false, _lastMovedId=null;
-function leadClick(id){ if(_suppressClick){ return; } openLead(id); }
+let _drag=null, _lastMovedId=null, _lastDraggedId=null;
+function esTactil(){ try{ return window.matchMedia && window.matchMedia("(pointer:coarse)").matches; }catch(_){ return false; } }
+function leadClick(id){ if(_lastDraggedId===id){ return; } openLead(id); }
+/* Limpieza TOTAL de un drag activo (ghost, timer, captura, listeners globales). */
+function abortDrag(){
+  if(!_drag) return;
+  const d=_drag; _drag=null;
+  if(d.timer){ clearInterval(d.timer); }
+  if(d.ghost){ try{ d.ghost.remove(); }catch(_){} }
+  if(d.card){ try{ d.card.releasePointerCapture(d.pid); }catch(_){}
+    try{ d.card.classList.remove("dragging"); }catch(_){}
+    d.card.removeEventListener("pointermove", cardPointerMove);
+    d.card.removeEventListener("pointerup", cardPointerUp);
+    d.card.removeEventListener("pointercancel", cardPointerUp);
+  }
+  document.removeEventListener("pointerup", cardPointerUp, true);
+  document.removeEventListener("pointercancel", cardPointerUp, true);
+  try{ document.querySelectorAll(".kcol.dragover").forEach(x=>x.classList.remove("dragover")); }catch(_){}
+  document.body.style.userSelect="";
+}
 /* Tras mover un lead: lo lleva arriba de su columna, lo trae a la vista y lo resalta */
 function resaltarLead(id){
   _lastMovedId=id;
   setTimeout(()=>{
-    const el=document.querySelector('.leadcard[data-id="'+id+'"]');
+    const el=document.querySelector('.leadcard:not([data-ghost])[data-id="'+id+'"]');
     if(el){ try{ el.scrollIntoView({behavior:"smooth",block:"center",inline:"center"}); }catch(_){}
       el.classList.add("justmoved"); setTimeout(()=>{ el.classList.remove("justmoved"); },2400); }
   },70);
 }
+/* Columna bajo el cursor SIN ocultar el ghost (el ghost ya tiene pointer-events:none). */
 function colBajoPunto(x,y){
-  let prev=null;
-  if(_drag&&_drag.ghost){ prev=_drag.ghost.style.display; _drag.ghost.style.display="none"; }
   const el=document.elementFromPoint(x,y);
-  if(_drag&&_drag.ghost){ _drag.ghost.style.display=prev||""; }
-  return el?el.closest(".kcol"):null;
+  const col = el?el.closest(".kcol"):null;
+  if(col) return col;
+  // el ghost (pointer-events:none) no debería interceptar, pero por si acaso buscamos por X
+  const cols=document.querySelectorAll("#kanban .kcol");
+  for(const c of cols){ const r=c.getBoundingClientRect(); if(x>=r.left && x<=r.right) return c; }
+  return null;
 }
 function _resaltarCol(){
   if(!_drag) return null;
@@ -1445,7 +1633,7 @@ function _resaltarCol(){
 /* scroll CONTINUO mientras el cursor está cerca de un borde (aunque no muevas el ratón) */
 function _autoScrollTick(){
   if(!_drag) return;
-  const k=document.getElementById("kanban"); if(!k) return;
+  const k=document.getElementById("kanban"); if(!k){ abortDrag(); return; }
   const r=k.getBoundingClientRect(), edge=100, x=_drag.lastX; let dx=0;
   if(x>r.right-edge) dx=Math.min(34, (x-(r.right-edge))+8);
   else if(x<r.left+edge) dx=-Math.min(34, ((r.left+edge)-x)+8);
@@ -1459,14 +1647,18 @@ function _autoScrollTick(){
 }
 function cardPointerDown(e,id){
   if(e.button!==0) return;
-  if(e.pointerType && e.pointerType!=="mouse") return;                       // táctil: usar botones
+  if((e.pointerType && e.pointerType!=="mouse") || esTactil()) return;       // táctil: usar botones
   if(e.target.closest("button,.chk,.lchecks,.lactions,.lcash,a")) return;    // no arrastrar desde botones/checks
+  abortDrag();                                                                // un segundo drag aborta el primero limpiamente
   const card=e.currentTarget;
   _drag={ id, x0:e.clientX, y0:e.clientY, lastX:e.clientX, lastY:e.clientY, moved:false, card, ghost:null, pid:e.pointerId, timer:null };
   try{ card.setPointerCapture(e.pointerId); }catch(_){}
   card.addEventListener("pointermove", cardPointerMove);
   card.addEventListener("pointerup", cardPointerUp);
   card.addEventListener("pointercancel", cardPointerUp);
+  // red de seguridad: captura el soltar aunque ocurra fuera del viewport o en área del sistema
+  document.addEventListener("pointerup", cardPointerUp, true);
+  document.addEventListener("pointercancel", cardPointerUp, true);
 }
 function cardPointerMove(e){
   if(!_drag) return;
@@ -1476,6 +1668,10 @@ function cardPointerMove(e){
     if(Math.abs(e.clientX-_drag.x0)+Math.abs(e.clientY-_drag.y0) < 6) return;
     _drag.moved=true; _drag.card.classList.add("dragging");
     const g=_drag.card.cloneNode(true); g.className="leadcard drag-ghost"; g.style.width=_drag.card.offsetWidth+"px";
+    g.setAttribute("data-ghost","true");
+    // el ghost no debe reaccionar a clics ni reusar el data-id en querySelectors
+    g.removeAttribute("onclick"); g.removeAttribute("onpointerdown"); g.removeAttribute("data-id");
+    g.querySelectorAll("[onclick],[onpointerdown]").forEach(el=>{ el.removeAttribute("onclick"); el.removeAttribute("onpointerdown"); });
     document.body.appendChild(g); _drag.ghost=g; document.body.style.userSelect="none";
     _drag.timer=setInterval(_autoScrollTick,16);                             // scroll continuo
   }
@@ -1484,31 +1680,38 @@ function cardPointerMove(e){
 }
 function cardPointerUp(e){
   if(!_drag) return;
-  const card=_drag.card;
-  if(_drag.timer) clearInterval(_drag.timer);
-  if(card){ try{ card.releasePointerCapture(_drag.pid); }catch(_){} card.removeEventListener("pointermove", cardPointerMove); card.removeEventListener("pointerup", cardPointerUp); card.removeEventListener("pointercancel", cardPointerUp); }
-  const moved=_drag.moved, id=_drag.id, ghost=_drag.ghost;
+  if(e && e.pointerId!=null && _drag.pid!=null && e.pointerId!==_drag.pid) return; // ignora otros punteros
+  const moved=_drag.moved, id=_drag.id;
   const col=moved?colBajoPunto(_drag.lastX,_drag.lastY):null;
-  if(ghost) ghost.remove();
-  if(card) card.classList.remove("dragging");
-  document.querySelectorAll(".kcol.dragover").forEach(x=>x.classList.remove("dragover"));
-  document.body.style.userSelect="";
-  _drag=null;
+  abortDrag();
   if(moved){
-    _suppressClick=true; setTimeout(()=>{ _suppressClick=false; },350);
+    _lastDraggedId=id; setTimeout(()=>{ if(_lastDraggedId===id) _lastDraggedId=null; },350);
     if(col && col.dataset.est){ const l=L(id); if(l && l.estado!==col.dataset.est) setEstado(id, col.dataset.est); }
   }
 }
 function renderPipeline(){
+  abortDrag();   // si llega un rerender en mitad de un drag, limpia el fantasma antes de machacar el DOM
   const ci = CLOSER_INFO[CLOSER];
   document.getElementById("pipe-eyebrow").textContent = esGeneral() ? "Pipeline · Equipo (todos)" : "Pipeline · "+ci.nombre;
   document.getElementById("pipe-who").textContent = esGeneral() ? "todos los" : "tus";
   let leads = misLeads();
-  if(PIPE_FILTER==="activos") leads = leads.filter(l=>ESTADOS[l.estado].grupo==="activo");
-  if(PIPE_FILTER==="cerrados") leads = leads.filter(l=>ESTADOS[l.estado].grupo==="cerrado");
+  if(PIPE_FILTER==="activos") leads = leads.filter(l=>ESTADOS[l.estado]?.grupo==="activo");
+  if(PIPE_FILTER==="cerrados") leads = leads.filter(l=>ESTADOS[l.estado]?.grupo==="cerrado");
+  if(PIPE_FILTER==="hoy") leads = leads.filter(l=>l.llamada===HOY);
+  if(PIPE_FILTER==="semana"){ const r=rangoSemana(); leads = leads.filter(l=>fechaValida(l.llamada)&&l.llamada>=r.lun&&l.llamada<=r.dom); }
+  // Búsqueda por nombre, email o teléfono (sobre los leads reales, en tiempo real)
+  const q = (PIPE_BUSCAR||"").trim().toLowerCase();
+  if(q){
+    const qTel = q.replace(/[\s+().-]/g,"");
+    leads = leads.filter(l=>
+      (l.nombre||"").toLowerCase().includes(q) ||
+      (l.email||"").toLowerCase().includes(q) ||
+      (qTel && (l.tel||"").replace(/[\s+().-]/g,"").includes(qTel))
+    );
+  }
   let cols = ORDEN_KANBAN.slice();
-  if(PIPE_FILTER==="activos") cols = cols.filter(c=>ESTADOS[c].grupo==="activo");
-  if(PIPE_FILTER==="cerrados") cols = cols.filter(c=>ESTADOS[c].grupo==="cerrado");
+  if(PIPE_FILTER==="activos") cols = cols.filter(c=>ESTADOS[c]?.grupo==="activo");
+  if(PIPE_FILTER==="cerrados") cols = cols.filter(c=>ESTADOS[c]?.grupo==="cerrado");
   document.getElementById("kanban").innerHTML = cols.map(est=>{
     const inCol = leads.filter(l=>l.estado===est);
     if(_lastMovedId) inCol.sort((a,b)=> a.id===_lastMovedId?-1 : (b.id===_lastMovedId?1:0));
@@ -1526,11 +1729,22 @@ function renderPipeline(){
 function leadCardHTML(l){
   const cash = cashDeLead(l);
   const cuando = l.estado==="pagohecho" ? "Cerrado "+fmtCorta(l.fechaCierre||l.llamada)
+    : !fechaValida(l.llamada) ? "Sin fecha de llamada"
+    : l.llamada===HOY ? "Llamada HOY"
     : esFuturo(l.llamada) ? "Llamada "+etiquetaCuando(l.llamada,"")
-    : esPasado(l.llamada) ? "Llamada "+fmtCorta(l.llamada)
-    : "Llamada hoy";
+    : "Llamada "+fmtCorta(l.llamada);
+  // urgencia visual por días que faltan para la llamada
+  let cuandoCls="";
+  if(fechaValida(l.llamada) && ESTADOS[l.estado]?.grupo==="activo" && l.estado!=="pagohecho"){
+    const dd=diffDias(HOY,l.llamada);
+    if(dd===0) cuandoCls="color:var(--green);font-weight:700";
+    else if(dd===1) cuandoCls="color:var(--amber);font-weight:700";
+    else if(dd<0) cuandoCls="color:var(--red);font-weight:700";
+  }
+  const objetivoTxt = l.objetivo ? l.objetivo : (l._ghl && !l._enriquecido ? "<span style='color:var(--faint)'>Cargando datos…</span>" : "—");
+  const dolorTxt = l.dolor ? l.dolor : (l._ghl && !l._enriquecido ? "<span style='color:var(--faint)'>Cargando…</span>" : "—");
   let checks="";
-  if(ESTADOS[l.estado].grupo==="activo"){
+  if(ESTADOS[l.estado]?.grupo==="activo"){
     checks = `<div class="lchecks" onclick="event.stopPropagation()">
       <span class="chk ${l.validada?'on':''}" onclick="toggleCheck('${l.id}','validada')"><span class="cb"></span>Valida</span>
       <span class="chk ${l.confirmada?'on':''}" onclick="toggleCheck('${l.id}','confirmada')"><span class="cb"></span>Confirma</span>
@@ -1558,16 +1772,17 @@ function leadCardHTML(l){
       ${ownTag}
     </div>
     <div class="lmeta">
-      <span class="lr"><span class="ki">📅</span>${cuando}</span>
-      <span class="lr"><span class="ki">🎯</span>${l.objetivo}</span>
+      <span class="lr"><span class="ki">📅</span><span style="${cuandoCls}">${cuando}</span></span>
+      <span class="lr"><span class="ki">🎯</span>${objetivoTxt}</span>
+      ${l.tel?`<span class="lr"><span class="ki">📞</span><a href="tel:${l.tel.replace(/\s/g,'')}" onclick="event.stopPropagation()" style="color:var(--blue)">${l.tel}</a></span>`:''}
     </div>
-    <div class="lpain"><b>Dolor:</b> ${l.dolor}</div>
+    <div class="lpain"><b>Dolor:</b> ${dolorTxt}</div>
     ${checks}
     ${cashHTML}
     ${acciones}
   </div>`;
 }
-function iniciales(n){ return n.split(" ").map(p=>p[0]).slice(0,2).join("").toUpperCase(); }
+function iniciales(n){ return (n||"?").split(" ").filter(Boolean).map(p=>p[0]).slice(0,2).join("").toUpperCase() || "?"; }
 
 function accBtn(cls,label,estado,id){ return `<button class="btn sm ${cls}" onclick="event.stopPropagation();setEstado('${id}','${estado}')">${label}</button>`; }
 function accionesEstado(l){
@@ -1596,11 +1811,12 @@ function accionesEstado(l){
     b.push(accBtn('red','Perdido','perdida',id));
   } else if(E==="reagendado"){
     b.push(accBtn('green','Confirmar →','reserva',id));
+    b.push(accBtn('amber','Llamada hecha →','realizada',id));
     b.push(accBtn('red','✕ Cancelada','cancelado',id));
-  } else if(ESTADOS[E].grupo==="cerrado" && E!=="pagohecho"){
+  } else if(ESTADOS[E]?.grupo==="cerrado" && E!=="pagohecho"){
     b.push(accBtn('','↩ Reabrir','agendada',id));
   }
-  if(ESTADOS[E].grupo==="activo"){
+  if(ESTADOS[E]?.grupo==="activo"){
     b.push(`<button class="btn sm wa" onclick="event.stopPropagation();waLead('${id}')">💬 WhatsApp</button>`);
   }
   if(!b.length) return "";
@@ -1611,45 +1827,54 @@ function accionesEstado(l){
 function renderAgenda(){
   const ci = CLOSER_INFO[CLOSER];
   document.getElementById("ag-eyebrow").textContent = esGeneral() ? "Agenda · Equipo (todos)" : "Agenda · "+ci.nombre;
+  const agh=document.getElementById("ag-hoy"); if(agh) agh.textContent = fechaHumana(HOY);
   const leads = misLeads();
-  const futuras = leads.filter(l=> esFuturo(l.llamada) && ESTADOS[l.estado].grupo==="activo")
+  const futuras = leads.filter(l=> esFuturo(l.llamada) && (ESTADOS[l.estado]?.grupo)==="activo")
                        .sort((a,b)=>a.llamada<b.llamada?-1:1);
-  const pasadas = leads.filter(l=> l.estado==="realizada" || (esPasado(l.llamada) && (l.estado==="reserva")) )
+  const pasadas = leads.filter(l=> l.estado==="realizada" || (esPasado(l.llamada) && ["reserva","reagendado","seguimiento"].includes(l.estado)) )
                        .sort((a,b)=>a.llamada<b.llamada?1:-1);
+  // Leads activos sin fecha de llamada asignada (típico de GHL mientras carga la cita)
+  const sinFecha = leads.filter(l=> !fechaValida(l.llamada) && (ESTADOS[l.estado]?.grupo)==="activo");
   document.getElementById("future-cnt").textContent = futuras.length;
   document.getElementById("past-cnt").textContent = pasadas.length;
-  document.getElementById("future-grid").innerHTML = futuras.length? futuras.map(l=>leadCardHTML(l)).join("")
+  let futHTML = futuras.length? futuras.map(l=>leadCardHTML(l)).join("")
     : `<div class="empty" style="grid-column:1/-1"><div class="em">📭</div>No tienes llamadas futuras pendientes de preparar.</div>`;
+  if(sinFecha.length){
+    futHTML += `<div style="grid-column:1/-1;margin-top:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Sin fecha de llamada asignada (${sinFecha.length})</div>`
+      + sinFecha.map(l=>leadCardHTML(l)).join("");
+  }
+  document.getElementById("future-grid").innerHTML = futHTML;
   document.getElementById("past-grid").innerHTML = pasadas.length? pasadas.map(l=>leadCardHTML(l)).join("")
     : `<div class="empty" style="grid-column:1/-1"><div class="em">✅</div>Todas las llamadas pasadas tienen resultado registrado.</div>`;
 }
 
 /* ===================== ACCIONES DE ESTADO Y CHECKS ===================== */
 function setEstado(id, nuevo){
+  if(GHL_MOVING.has(id)){ toast("Espera, aún se está sincronizando este lead…"); return; }
   const l=L(id);
   const anterior=l.estado;
+  if(anterior===nuevo) return;
   const patch={estado:nuevo};
   if(nuevo==="cualificado") patch.validada=true;
   if(nuevo==="reserva"){ patch.validada=true; patch.confirmada=true; }
-  if(nuevo==="realizada"){ patch.asistio=true; if(!l.resultado) patch.resultado="pendiente"; }
-  if(nuevo==="noasistencia"){ patch.asistio=false; patch.resultado="noshow"; }
-  if(nuevo==="perdida"){ patch.resultado="nocompra"; }
-  if(nuevo==="nocualificado"){ patch.resultado="nocompra"; }
-  if(nuevo==="cancelado"){ patch.resultado="nocompra"; }
-  if(nuevo==="seguimiento"){ patch.asistio=true; patch.validada=true; patch.resultado="seguimiento"; patch.callRes="seguimiento"; if(!l.fechaSeguimiento) patch.fechaSeguimiento=fechaConOffset(HOY,14); }
+  if(nuevo==="realizada"){ patch.asistio=true; }
+  if(nuevo==="noasistencia"){ patch.asistio=false; }
+  if(nuevo==="seguimiento"){ patch.asistio=true; patch.validada=true; if(!l.fechaSeguimiento) patch.fechaSeguimiento=fechaConOffset(HOY,14); }
   // Cambio OPTIMISTA en local (UI al instante)
   setLead(id, patch);
-  toast(estadoToast(nuevo));
+  toast(estadoToast(nuevo)+" · "+(l.nombre||""));
   _lastMovedId=id;
+  GHL_MOVING.add(id);
   rerender();
   resaltarLead(id);
   // En paralelo, escribe en GHL; si falla, revierte
   moverEnGHL(L(id), nuevo).then(ok=>{
+    GHL_MOVING.delete(id);
     if(!ok){ setLead(id, {estado:anterior}); rerender(); if(openLeadId===id) refreshDrawer(); }
   });
 }
 function estadoToast(e){
-  const m={cualificado:"Movido a Cualificado ✓",reserva:"Movido a Cita confirmada ✓",realizada:"Movido a Cita realizada",perdida:"Movido a Pérdida",nocualificado:"Movido a No cualificado",cancelado:"Movido a Cancelada",noasistencia:"Movido a No asistencia",pagohecho:"¡Venta registrada! 🏆",reagendado:"Movido a Reagendado",seguimiento:"Movido a Seguimiento · recordatorio en 2 semanas 🔔",agendada:"Reabierto · Cita agendada"};
+  const m={cualificado:"Movido a Cualificado ✓",reserva:"Movido a Cita confirmada ✓",realizada:"Movido a Cita realizada ✓",perdida:"Movido a Pérdida",nocualificado:"Movido a No cualificado",cancelado:"Movido a Cancelada",noasistencia:"Movido a No asistencia",pagohecho:"¡Venta registrada! 🏆",reagendado:"Movido a Reagendado",seguimiento:"Movido a Seguimiento · recordatorio en 2 semanas 🔔",agendada:"Reabierto · Cita agendada"};
   return m[e]||"Actualizado";
 }
 /* ===================== ESCRITURA EN GHL (bidireccional) =====================
@@ -1660,15 +1885,18 @@ async function moverEnGHL(lead, nuevoEstado){
   try{
     const r = await fetch(GHL.url+"/move?key="+encodeURIComponent(GHL.key), {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ opportunityId: lead.id, estado: nuevoEstado })
+      body: JSON.stringify({ opportunityId: lead.opportunityId || lead.id, estado: nuevoEstado })
     });
+    if(r.status===401){ cerrarSesion(); toast("⛔ Sesión caducada · por favor vuelve a entrar"); return false; }
     const data = await r.json().catch(()=>({}));
     if(!r.ok || !data.stageId){ toast("⚠️ No se pudo actualizar en GHL · se revirtió (¿Worker actualizado?)"); return false; }
-    toast("✓ Actualizado en GHL");
-    return true;
+    if(data.estado && data.estado!==nuevoEstado){ toast("⚠️ GHL confirmó un estado distinto al esperado"); return false; }
+    lastSync = Date.now(); actualizarBannersConexion();
+    return true; // éxito silencioso: solo los errores molestan al closer
   }catch(e){ toast("⚠️ Sin conexión con GHL · se revirtió el cambio"); return false; }
 }
 function toggleCheck(id, tipo){
+  if(GHL_MOVING.has(id)){ toast("Espera, aún se está sincronizando este lead…"); return; }
   const l=L(id);
   const anterior=l.estado;
   let nuevoEstado=null; // si cambia de etapa, lo sincronizamos con GHL
@@ -1686,12 +1914,16 @@ function toggleCheck(id, tipo){
     setLead(id,patch); toast(v?"Asistencia confirmada ✓":"Confirmación quitada");
   } else if(tipo==="noshow"){
     const v=!(l.asistio===false);
-    if(v){ setLead(id,{asistio:false,estado:"noasistencia",resultado:"noshow"}); nuevoEstado="noasistencia"; toast("Marcado como No asistencia"); }
-    else { setLead(id,{asistio:null,estado:"reserva",resultado:undefined}); nuevoEstado="reserva"; toast("No asistencia deshecho"); }
+    if(v){ setLead(id,{asistio:false,estado:"noasistencia"}); nuevoEstado="noasistencia"; toast("Marcado como No asistencia"); }
+    else { setLead(id,{asistio:null,estado:"reserva"}); nuevoEstado="reserva"; toast("No asistencia deshecho"); }
   }
   rerender();
   if(nuevoEstado){
+    GHL_MOVING.add(id);
+    const reverter = nuevoEstado;
     moverEnGHL(L(id), nuevoEstado).then(ok=>{
+      GHL_MOVING.delete(id);
+      // revierte al estado que el closer veía ANTES de este toggle concreto
       if(!ok){ setLead(id, {estado:anterior}); rerender(); if(openLeadId===id) refreshDrawer(); }
     });
   }
@@ -1699,16 +1931,18 @@ function toggleCheck(id, tipo){
 
 /* ===================== DRAWER DE LEAD ===================== */
 function openLead(id, scrollPago){
+  fmtSeleccionado=null; // evita arrastrar el formato de un lead anterior
   openLeadId=id;
   const _b=LEADS.find(x=>x.id===id);
-  if(_b && _b.contactId && !GHL_DETALLE[_b.contactId]) enriquecerLead(_b.contactId);
+  // solo enriquece si nunca se intentó (undefined). null=cargando, objeto=cargado/fallido
+  if(_b && _b.contactId && GHL_DETALLE[_b.contactId]===undefined) enriquecerLead(_b.contactId);
   const l=L(id);
-  const ci=CLOSER_INFO[l.closer];
+  const ci=CLOSER_INFO[l.closer] || CLOSER_INFO.pascu;
   document.getElementById("d-name").innerHTML = `<span class="avatar lg ${ci.cls}">${iniciales(l.nombre)}</span><div><h2>${l.nombre}</h2></div>`;
-  const e=ESTADOS[l.estado];
+  const e=ESTADOS[l.estado] || ESTADOS.agendada;
   document.getElementById("d-meta").innerHTML =
     `<span class="pill" style="background:${e.dot}22;color:${e.color};border-color:${e.dot}55"><span class="dot-s" style="background:${e.dot}"></span>${e.t}</span>
-     <span class="pill ghost">${l.origen}</span>
+     <span class="pill ghost">${l.origen||'—'}</span>
      <span class="pill ghost">Closer: ${ci.corto}</span>`;
   document.getElementById("d-body").innerHTML = drawerBody(l);
   document.getElementById("backdrop").classList.add("open");
@@ -1725,14 +1959,18 @@ function rerenderBackground(){ renderActive(); updateNav(); }
 
 function drawerBody(l){
   const cash=cashDeLead(l);
+  const cargando = l._ghl && !l._enriquecido && GHL_DETALLE[l.contactId]===null;
+  const ph = (v)=> v ? v : (cargando ? "<span style='color:var(--faint)'>Cargando datos de GHL…</span>" : "—");
+  const fechaCell = (s)=> fechaValida(s) ? (fmtFecha(s)+" ("+diaSemana(s).slice(0,3)+")") : "—";
+  const grupoActivo = ESTADOS[l.estado]?.grupo==="activo";
   let html = `<div class="dsec"><span class="si">👤</span>Datos de contacto · a un clic</div>
     <div class="kvgrid">
-      <div class="kv"><div class="k">Email</div><div class="v copy" onclick="copiar('${l.email}')">${l.email}<span class="cpi">⧉ copiar</span></div></div>
-      <div class="kv"><div class="k">Teléfono</div><div class="v copy" onclick="copiar('${l.tel}')">${l.tel}<span class="cpi">⧉ copiar</span></div></div>
-      <div class="kv"><div class="k">Agendó</div><div class="v">${fmtFecha(l.agendado)} (${diaSemana(l.agendado).slice(0,3)})</div></div>
-      <div class="kv"><div class="k">Llamada</div><div class="v">${fmtFecha(l.llamada)} (${diaSemana(l.llamada).slice(0,3)})</div></div>
-      <div class="kv"><div class="k">Presupuesto declarado</div><div class="v">${l.presupuesto}</div></div>
-      <div class="kv"><div class="k">Nivel / contexto</div><div class="v">${l.nivel}</div></div>
+      <div class="kv"><div class="k">Email</div><div class="v copy" onclick="copiar('${l.email}')">${l.email||'—'}<span class="cpi">⧉ copiar</span></div></div>
+      <div class="kv"><div class="k">Teléfono</div><div class="v copy" onclick="copiar('${l.tel}')">${l.tel||'—'}<span class="cpi">⧉ copiar</span></div></div>
+      <div class="kv"><div class="k">Agendó</div><div class="v">${fechaCell(l.agendado)}</div></div>
+      <div class="kv"><div class="k">Llamada</div><div class="v">${fechaCell(l.llamada)}</div></div>
+      <div class="kv"><div class="k">Presupuesto declarado</div><div class="v">${ph(l.presupuesto)}</div></div>
+      <div class="kv"><div class="k">Nivel / contexto</div><div class="v">${ph(l.nivel)}</div></div>
     </div>
     <div class="dwa-row"><button class="btn wa" onclick="waLead('${l.id}')">💬 Recordar / escribir por WhatsApp</button></div>`;
 
@@ -1747,12 +1985,13 @@ function drawerBody(l){
           <button class="btn sm" onclick="setSeguimiento('${l.id}',30)">+1 mes</button>
           <button class="btn sm" onclick="setSeguimientoCustom('${l.id}')">Fecha…</button>
         </div>
+        <div id="seg-custom-box" style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap"></div>
       </div>`;
   }
 
   html += `<div class="dsec"><span class="si">🧭</span>Estado del lead</div>${timelineHTML(l)}`;
 
-  if(ESTADOS[l.estado].grupo==="activo"){
+  if(grupoActivo){
     html += `<div class="dsec"><span class="si">⚡</span>Checks rápidos</div>
       <div class="lchecks" style="margin-top:0">
         <span class="chk ${l.validada?'on':''}" onclick="toggleCheck('${l.id}','validada');refreshDrawer()"><span class="cb"></span>Cualifica (validada)</span>
@@ -1761,9 +2000,12 @@ function drawerBody(l){
       </div>`;
   }
 
+  const formHTML = (Array.isArray(l.form) && l.form.length)
+    ? l.form.map(f=>`<div class="qa"><div class="q">${f.q}</div><div class="a ${f.hl?'hl':''}">${f.a}</div></div>`).join("")
+    : `<div class="qa"><div class="a" style="color:var(--faint)">${cargando ? 'Cargando respuestas desde GHL…' : 'Sin respuestas de formulario registradas.'}</div></div>`;
   html += `<div class="dsec"><span class="si">📋</span>Respuestas del formulario (Calendly)</div>
-    <div class="qabox">${l.form.map(f=>`<div class="qa"><div class="q">${f.q}</div><div class="a ${f.hl?'hl':''}">${f.a}</div></div>`).join("")}</div>
-    <div style="margin-top:11px" class="leadcard" onclick="event.stopPropagation()"><div class="lpain" style="margin-top:0"><b>Dolor / nota previa:</b> ${l.dolor}</div></div>`;
+    <div class="qabox">${formHTML}</div>
+    <div style="margin-top:11px" class="leadcard" onclick="event.stopPropagation()"><div class="lpain" style="margin-top:0"><b>Dolor / nota previa:</b> ${l.dolor || (cargando?'<span style="color:var(--faint)">Cargando…</span>':'—')}</div></div>`;
 
   if(l.resumen){
     html += `<div class="dsec"><span class="si">🎧</span>Resumen ejecutivo de la llamada (Fathom)</div>
@@ -1851,6 +2093,10 @@ function drawerEstadoBotones(l){
     {k:"noasistencia",t:"No asistencia",cls:"red"},
     {k:"reagendado",t:"Reagendar",cls:""},
   ];
+  // Si el lead está cerrado (pero no en pago hecho), permite reabrir a 'agendada' como en el kanban
+  if(ESTADOS[l.estado]?.grupo==="cerrado" && l.estado!=="pagohecho"){
+    all.push({k:"agendada",t:"↩ Reabrir (agendada)",cls:""});
+  }
   return `<div class="dactions">${all.filter(b=>b.k!==l.estado).map(b=>
     `<button class="btn ${b.cls}" onclick="setEstado('${l.id}','${b.k}');refreshDrawer()">${b.t}</button>`).join("")}</div>`;
 }
@@ -1868,33 +2114,43 @@ function waMsg(l){
 }
 function waLead(id){
   const l=L(id);
-  const tel=(l.tel||'').replace(/[^0-9]/g,'');
+  let tel=(l.tel||'').replace(/[^0-9]/g,'');
   if(!tel){ toast('Este lead no tiene teléfono'); return; }
+  // número español de 9 dígitos sin prefijo → anteponer 34
+  if(tel.length===9 && /^[6789]/.test(tel)) tel='34'+tel;
+  if(tel.length<10){ toast('El número parece incompleto: '+l.tel+'. Revísalo en la ficha.'); return; }
   window.open('https://wa.me/'+tel+'?text='+encodeURIComponent(waMsg(l)),'_blank');
   toast('Abriendo WhatsApp con el mensaje listo 💬');
 }
 function setSeguimiento(id, days){
   const fecha=fechaConOffset(HOY,days);
+  fijarSeguimiento(id, fecha);
+}
+/* input de fecha inline (date picker nativo) en vez de window.prompt */
+function setSeguimientoCustom(id){
+  const box=document.getElementById('seg-custom-box');
+  if(!box) return;
+  box.innerHTML = `<input type="date" id="seg-custom-input" value="${fechaConOffset(HOY,14)}" min="${HOY}"
+      style="padding:7px 10px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-family:inherit;font-size:13px;outline:none">
+    <button class="btn sm primary" onclick="aplicarSeguimientoCustom('${id}')">Fijar</button>`;
+  const inp=document.getElementById('seg-custom-input'); if(inp) inp.focus();
+}
+function aplicarSeguimientoCustom(id){
+  const inp=document.getElementById('seg-custom-input');
+  const v=inp ? inp.value : '';
+  if(!fechaValida(v)){ toast('Elige una fecha válida'); return; }
+  fijarSeguimiento(id, v);
+}
+function fijarSeguimiento(id, fecha){
+  if(GHL_MOVING.has(id)){ toast('Espera, aún se está sincronizando este lead…'); return; }
   const anterior=L(id).estado;
-  setLead(id,{estado:'seguimiento',resultado:'seguimiento',callRes:'seguimiento',asistio:true,validada:true,fechaSeguimiento:fecha});
+  setLead(id,{estado:'seguimiento',asistio:true,validada:true,fechaSeguimiento:fecha});
   toast('🔔 Recordatorio fijado para el '+fmtCorta(fecha));
   rerenderBackground(); refreshDrawer();
   if(anterior!=='seguimiento'){
+    GHL_MOVING.add(id);
     moverEnGHL(L(id), 'seguimiento').then(ok=>{
-      if(!ok){ setLead(id, {estado:anterior}); rerenderBackground(); if(openLeadId===id) refreshDrawer(); }
-    });
-  }
-}
-function setSeguimientoCustom(id){
-  const v=window.prompt('Fecha del próximo seguimiento (AAAA-MM-DD):', fechaConOffset(HOY,14));
-  if(!v) return;
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(v)){ toast('Formato no válido. Usa AAAA-MM-DD'); return; }
-  const anterior=L(id).estado;
-  setLead(id,{estado:'seguimiento',resultado:'seguimiento',fechaSeguimiento:v});
-  toast('🔔 Seguimiento fijado para el '+fmtCorta(v));
-  rerenderBackground(); refreshDrawer();
-  if(anterior!=='seguimiento'){
-    moverEnGHL(L(id), 'seguimiento').then(ok=>{
+      GHL_MOVING.delete(id);
       if(!ok){ setLead(id, {estado:anterior}); rerenderBackground(); if(openLeadId===id) refreshDrawer(); }
     });
   }
@@ -1983,19 +2239,27 @@ function previewPago(f, cuotas, cobrado){
 function textoOffset(fecha){
   const d=diffDias(HOY,fecha);
   if(d<=0) return "hoy";
-  if(d<=33) return "≈ a 30 días";
-  return "≈ a 60 días";
+  return "a "+d+" días";
 }
 function confirmarPago(id){
   if(!fmtSeleccionado) return;
-  const anterior=L(id).estado;
-  setLead(id, {estado:"pagohecho", resultado:"ganado", formatoPago:fmtSeleccionado, fechaCierre:HOY, asistio:true, validada:true, confirmada:true, callRes:"ganada"});
+  if(GHL_MOVING.has(id)){ toast("Espera, aún se está sincronizando este lead…"); return; }
+  const l0=L(id);
+  const anterior=l0.estado;
+  const fmtPrevio=l0.formatoPago, cierrePrevio=l0.fechaCierre; // para revertir si GHL falla
+  setLead(id, {estado:"pagohecho", formatoPago:fmtSeleccionado, fechaCierre:HOY, asistio:true, validada:true, confirmada:true});
   fmtSeleccionado=null;
   toast("¡Venta registrada! 🏆 Cash collected actualizado");
-  refreshDrawer();
+  openLead(id, true);   // reabre el drawer con scroll a la sección de pago registrado
   rerenderBackground();
+  GHL_MOVING.add(id);
   moverEnGHL(L(id), "pagohecho").then(ok=>{
-    if(!ok){ setLead(id, {estado:anterior}); rerenderBackground(); if(openLeadId===id) refreshDrawer(); }
+    GHL_MOVING.delete(id);
+    if(!ok){
+      // revierte el patch COMPLETO, no solo el estado, para no dejar datos basura en STORE
+      setLead(id, {estado:anterior, formatoPago:fmtPrevio, fechaCierre:cierrePrevio});
+      rerenderBackground(); if(openLeadId===id) refreshDrawer();
+    }
   });
 }
 function pagoCerradoHTML(l, cash){
@@ -2040,8 +2304,12 @@ function guardarNotaLead(id){
   toast("Nota guardada");
 }
 function copiar(txt){
-  try{ navigator.clipboard.writeText(txt); }catch(e){}
-  toast("Copiado: "+txt);
+  const ok=()=>toast("Copiado: "+txt);
+  const fail=()=>{ try{ window.prompt("Copia a mano:", txt); }catch(e){} };
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(ok, fail); }
+    else { fail(); }
+  }catch(e){ fail(); }
 }
 
 /* ============================================================
@@ -2066,6 +2334,20 @@ function objetivoDeNivel(closer, nivel){
   // show-up objetivo del equipo = media de los objetivos individuales
   const showUp = Math.round(CLOSERS_EQUIPO.reduce((s,c)=> s + KPI_OBJETIVOS[c][nivel].showUp,0)/CLOSERS_EQUIPO.length);
   return { agendadas:sum("agendadas"), cualificadas:sum("cualificadas"), asistencias:sum("asistencias"), ventas:sum("ventas"), showUp };
+}
+/* Facturación REAL del periodo: suma cashDeLead().proyectado de los leads
+   cerrados (pagohecho) con fechaCierre dentro del rango pedido. Si no se pasa
+   rango, cuenta todos los cierres del closer activo. Devuelve cobrado y proyectado. */
+function facturacionRealPeriodo(rango){
+  let cobrado=0, proyectado=0, ventas=0;
+  misLeads().forEach(l=>{
+    if(l.estado!=="pagohecho") return;
+    const fc=l.fechaCierre||l.llamada;
+    if(rango && fechaValida(fc) && (fc<rango.desde || fc>rango.hasta)) return;
+    const c=cashDeLead(l);
+    if(c){ cobrado+=c.cobrado; proyectado+=c.proyectado; ventas++; }
+  });
+  return {cobrado, proyectado, ventas};
 }
 function kpiSerie(){ return serieDeNivel(CLOSER, mkNivel); }
 function kpiObjetivo(){ return objetivoDeNivel(CLOSER, mkNivel); }
@@ -2118,7 +2400,12 @@ function renderVentas(){
   const ci=CLOSER_INFO[CLOSER];
   document.getElementById("mk-eyebrow").textContent = "Ventas & KPIs · "+ci.nombre;
   if(callSel===null){ const lc=llamadasDelCloser(); callSel = lc.length?lc[0].id:null; }
-  let h = kpisPeriodoHTML() + cuelloTendenciaHTML() + llamadasFathomHTML();
+  const refBanner = `<div class="refbanner">
+    <span class="rbi">📊</span>
+    <div><b>Datos de referencia</b> <span class="rbtag">aún no en tiempo real</span><br>
+    Las <b>series históricas y objetivos</b> de esta vista son de muestra (estimados) para enseñarte el formato. Lo que SÍ es real y vive del pipeline de GHL: tu <b>«Mi panel»</b>, la <b>facturación</b> (cobrado/proyectado por formato) y el <b>show-up</b>. No confundas estos KPIs históricos con tus números reales.</div>
+  </div>`;
+  let h = refBanner + kpisPeriodoHTML() + cuelloTendenciaHTML() + llamadasFathomHTML();
   document.getElementById("mk-body").innerHTML = h;
   cablearVentas();
 }
@@ -2148,7 +2435,7 @@ function kpisPeriodoHTML(){
     </div>`;
   let h = `<div class="h-eyebrow" style="margin-top:10px">🗓️ Rendimiento por periodo</div>
     <div class="h-big" style="font-size:20px;margin-bottom:2px">KPIs de ventas (${KPI_NIVEL_LBL[mkNivel].toLowerCase()}) · ${CLOSER_INFO[CLOSER].corto}
-    <small>Periodos FIJOS inventados. Cambia de nivel y navega con ◀ ▶: los números cambian de verdad.</small></div>`;
+    <small>Series históricas de muestra (estimadas). La <b>facturación</b> y el <b>show-up</b> del panel «Mi panel» se calculan desde el pipeline real. Cambia de nivel y navega con ◀ ▶.</small></div>`;
   h += `<div class="perbar"><div class="seg" style="margin:0">${segBtns}</div>${datenav}</div>`;
 
   const kpiCard = (k, etq, alc, objVal, fmt)=>{
@@ -2169,14 +2456,21 @@ function kpisPeriodoHTML(){
     </div>`;
   };
   h += `<div class="note">🎯 <b>Objetivo del periodo vs alcanzado</b> (${KPI_NIVEL_LBL[mkNivel].toLowerCase()}) para <b>${CLOSER_INFO[CLOSER].corto}</b>. <span style="color:var(--green)">Verde</span> cumple/supera · <span style="color:var(--amber)">ámbar</span> cerca (≥80 %) · <span style="color:var(--red)">rojo</span> por debajo.</div>`;
+  // Facturación: usa el cash REAL del pipeline (cobrado/proyectado por formato) en lugar del ticket medio.
+  const factReal = facturacionRealPeriodo(null);
+  const usarReal = factReal.proyectado>0;
+  const ingresosAlc = usarReal ? factReal.proyectado : p.ventas*ticket;
+  const ingresosEtq = usarReal ? '💶 Facturación real (€) · proyectada' : '💶 Facturación estimada (€)';
   h += `<div class="mk-kpis">
     ${kpiCard('agendadas','Agendadas (citas reservadas)', p.agendadas, obj.agendadas)}
     ${kpiCard('cualificadas','Agendadas cualificadas', p.cualificadas, obj.cualificadas)}
     ${kpiCard('asistencias','Asistencias (show-up)', p.asistencias, obj.asistencias)}
     ${kpiCard('ventas','Ventas / cierres', p.ventas, obj.ventas)}
-    ${kpiCard('ingresos','💶 Facturación estimada (€)', p.ventas*ticket, obj.ventas*ticket, eur)}
+    ${kpiCard('ingresos', ingresosEtq, ingresosAlc, obj.ventas*ticket, eur)}
   </div>`;
-  h += `<div class="note" style="margin-top:-4px">💶 Ingresos estimados = <b>ventas × ticket medio (${eur(ticket)})</b>. Al conectar los pagos reales (Hotmart) saldrá el cobrado exacto por formato de pago.</div>`;
+  h += usarReal
+    ? `<div class="note" style="margin-top:-4px">💶 Facturación <b>real</b> = suma del <b>proyectado por formato</b> de los cierres del pipeline (cobrado hoy: <b>${eur(factReal.cobrado)}</b>). El objetivo se mantiene en ticket medio (${eur(ticket)}).</div>`
+    : `<div class="note" style="margin-top:-4px">💶 Ingresos estimados = <b>ventas × ticket medio (${eur(ticket)})</b>. En cuanto haya cierres con pago registrado, esta tarjeta muestra el cobrado/proyectado real por formato.</div>`;
   const showAlc = p.cualificadas ? Math.round((p.asistencias/p.cualificadas)*100) : 0;
   const showCls = showAlc>=obj.showUp ? "verde" : (showAlc>=obj.showUp*0.8 ? "amarillo" : "rojo");
   h += `<div class="note" style="margin:-2px 0 22px"><span class="ten-pill ${showCls}" style="vertical-align:middle">${showAlc>=obj.showUp?'✓':'▼'} Show-up: ${showAlc}% alcanzado vs ${obj.showUp}% objetivo (${showAlc-obj.showUp>=0?'+':''}${showAlc-obj.showUp} pts)</span></div>`;
@@ -2261,18 +2555,24 @@ function cuelloTendenciaHTML(){
 }
 
 /* ---- REVISIÓN DE LLAMADAS (Fathom) · conectada a los leads existentes ---- */
-const CALL_RES_LBL = { ganada:"Ganada", perdida:"Perdida", seguimiento:"Seguimiento", noshow:"No-show" };
+/* Vocabulario ÚNICO de resultado de llamada, derivado SIEMPRE de l.estado
+   (sin campos legacy callRes/resultado). Las clases CSS coinciden con estas claves. */
+const CALL_RES_LBL = { ganada:"Ganada", perdida:"Perdida", seguimiento:"Seguimiento", noshow:"No-show", nocualificado:"No cualificado", cancelado:"Cancelada" };
 function callResDe(l){
-  if(l.callRes) return l.callRes;
-  if(l.estado==="pagohecho") return "ganada";
-  if(l.estado==="perdida"||l.estado==="nocualificado"||l.estado==="cancelado") return "perdida";
-  if(l.estado==="noasistencia") return "noshow";
-  if(l.estado==="realizada") return "seguimiento";
-  return "seguimiento";
+  switch(l.estado){
+    case "pagohecho": return "ganada";
+    case "perdida": return "perdida";
+    case "nocualificado": return "nocualificado";
+    case "cancelado": return "cancelado";
+    case "noasistencia": return "noshow";
+    case "seguimiento": return "seguimiento";
+    case "realizada": return "seguimiento";
+    default: return "seguimiento";
+  }
 }
 /* llamadas del closer activo = sus leads que ya tuvieron llamada (con resumen Fathom o resultado) */
 function llamadasDelCloser(){
-  return misLeads().filter(l=> l.resumen || l.callRes || ["pagohecho","perdida","nocualificado","cancelado","noasistencia","realizada"].includes(l.estado))
+  return misLeads().filter(l=> l.resumen || ["pagohecho","perdida","nocualificado","cancelado","noasistencia","realizada","seguimiento"].includes(l.estado))
     .sort((a,b)=> a.llamada<b.llamada?1:-1);
 }
 function llamadasFathomHTML(){
@@ -2285,10 +2585,11 @@ function llamadasFathomHTML(){
   let list="";
   lc.forEach(l=>{
     const r=callResDe(l);
+    const lbl=(CALL_RES_LBL[r]||"—").toUpperCase();
     const sel = l.id===callSel?"sel":"";
     list+=`<button class="callitem ${r} ${sel}" data-call="${l.id}">
       <div class="cin">${l.nombre}</div>
-      <div class="cisub"><span class="res-pill ${r}">${CALL_RES_LBL[r].toUpperCase()}</span> ${fmtCorta(l.llamada)} · ${l.callDur||'—'}</div>
+      <div class="cisub"><span class="res-pill ${r}">${lbl}</span> ${fmtCorta(l.llamada)} · ${l.callDur||'—'}</div>
     </button>`;
   });
   return `<div class="card" style="margin-top:8px"><h3>📞 Revisión de llamadas de ${CLOSER_INFO[CLOSER].corto} <span class="pip">Fuente: Fathom (conexión real más adelante)</span></h3>
@@ -2300,21 +2601,23 @@ function llamadasFathomHTML(){
   </div>`;
 }
 function callPanelHTML(id){
-  const l = L(id); if(!l) return "";
+  const l = L(id); if(!l || !l.id) return "";
   const r = callResDe(l);
+  const lbl = CALL_RES_LBL[r] || "—";
   const nota = getNota("call-"+l.id);
-  const colcls = r==="ganada"?"green":r==="perdida"||r==="noshow"?"red":"amber";
+  const colcls = r==="ganada"?"green":(r==="perdida"||r==="noshow"?"red":(r==="nocualificado"||r==="cancelado"?"":"amber"));
+  const ciL = CLOSER_INFO[l.closer] || CLOSER_INFO.pascu;
   let bloque = `<div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap">
-      <h3 style="margin:0;font-size:15px">${l.nombre} · ${l.objetivo}</h3>
-      <span class="res-pill ${r}" style="margin-left:auto">${CALL_RES_LBL[r]}</span>
+      <h3 style="margin:0;font-size:15px">${l.nombre}${l.objetivo?' · '+l.objetivo:''}</h3>
+      <span class="res-pill ${r}" style="margin-left:auto">${lbl}</span>
     </div>
-    <div class="dm" style="color:var(--muted);font-size:12.5px;margin-top:6px">🎙️ Llamada ${fmtFecha(l.llamada)} · ${l.callDur||'—'} · closer: ${CLOSER_INFO[l.closer].corto}</div>
+    <div class="dm" style="color:var(--muted);font-size:12.5px;margin-top:6px">🎙️ Llamada ${fmtFecha(l.llamada)} · ${l.callDur||'—'} · closer: ${ciL.corto}</div>
     <div class="dsec">Desempeño</div>
     <div class="kvgrid">
-      <div class="kv"><div class="k">Resultado</div><div class="v ${colcls}">${CALL_RES_LBL[r]}</div></div>
+      <div class="kv"><div class="k">Resultado</div><div class="v ${colcls}">${lbl}</div></div>
       <div class="kv"><div class="k">Duración</div><div class="v">${l.callDur||'—'}</div></div>
-      <div class="kv"><div class="k">Origen del lead</div><div class="v" style="font-size:12.5px">${l.origen}</div></div>
-      <div class="kv"><div class="k">Presupuesto</div><div class="v" style="font-size:12.5px">${l.presupuesto}</div></div>
+      <div class="kv"><div class="k">Origen del lead</div><div class="v" style="font-size:12.5px">${l.origen||'—'}</div></div>
+      <div class="kv"><div class="k">Presupuesto</div><div class="v" style="font-size:12.5px">${l.presupuesto||'—'}</div></div>
     </div>`;
   if(l.momentoClave){
     bloque += `<div class="dsec">Momento clave</div><div class="keymoment">${l.momentoClave}</div>`;
@@ -2322,6 +2625,14 @@ function callPanelHTML(id){
   if(l.resumen){
     bloque += `<div class="dsec">Resumen de la llamada (Fathom)</div>
       <div class="callout"><ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px">${l.resumen.map(x=>`<li>${x}</li>`).join("")}</ul></div>`;
+  } else if(l._ghl){
+    bloque += `<div class="dsec">Resumen de la llamada (Fathom)</div>
+      <div class="callout" style="color:var(--muted)">El resumen automático de Fathom estará disponible cuando se conecte la integración.</div>`;
+  }
+  const notaFicha = (STORE[l.id] && STORE[l.id].nota) || "";
+  if(notaFicha){
+    bloque += `<div class="dsec">🗒️ Nota de la ficha (solo lectura)</div>
+      <div class="keymoment" style="white-space:pre-wrap">${escapeHtml(notaFicha)}</div>`;
   }
   bloque += `<div class="dsec">📝 Notas de seguimiento <span style="color:var(--faint);font-weight:500;text-transform:none;letter-spacing:0">· se guardan en este navegador</span></div>
     <textarea class="notes-ta" id="callNotes" placeholder="Escribe aquí el seguimiento de esta llamada (objeciones, próximos pasos, recordatorios)...">${escapeHtml(nota)}</textarea>
@@ -2368,16 +2679,16 @@ function cablearVentas(){
 
 /* ===================== GUÍA ===================== */
 const PASOS=[
-  {n:"1", ico:"📥", t:"Llega un lead nuevo", d:"Cuando alguien agenda por Calendly aparece en <b>Nuevo / Agendado</b>. Tienes ya su email, teléfono, cuándo es la llamada y las <b>respuestas del formulario</b> (objetivo, presupuesto, por qué ahora). Todo en su tarjeta, sin Excel aparte."},
-  {n:"2", ico:"✅", t:"Valida (¿cualifica?)", d:"Lee sus respuestas y decide si encaja. Pulsa el check <b>Valida</b> en la tarjeta. El lead se mueve solo a <b>Validado</b> y desaparece de tu lista de 'por validar'."},
-  {n:"3", ico:"📌", t:"Confirma (¿asistirá?)", d:"Antes de la llamada confirma que va a presentarse. Pulsa <b>Confirma</b>. Pasa a <b>Confirmado</b> y lo verás en 'Hoy' el día de la llamada."},
-  {n:"4", ico:"📞", t:"Haz la llamada", d:"Tras hablar, pulsa <b>Llamada hecha</b>. Si no apareció, marca <b>No-show</b>. La llamada pasa a la zona de <b>Pasadas · pendientes de registrar resultado</b>. Si te pidió moverla, usa <b>Reagendar</b>."},
+  {n:"1", ico:"📥", t:"Llega un lead nuevo", d:"Cuando alguien agenda por Calendly aparece en <b>Cita agendada</b>. Tienes ya su email, teléfono, cuándo es la llamada y las <b>respuestas del formulario</b> (objetivo, presupuesto, por qué ahora). Todo en su tarjeta, sin Excel aparte."},
+  {n:"2", ico:"✅", t:"Valida (¿cualifica?)", d:"Lee sus respuestas y decide si encaja. Pulsa el check <b>Valida</b> en la tarjeta. El lead se mueve solo a <b>Cualificado</b> y desaparece de tu lista de 'por validar'."},
+  {n:"3", ico:"📌", t:"Confirma (¿asistirá?)", d:"Antes de la llamada confirma que va a presentarse. Pulsa <b>Confirma</b>. Pasa a <b>Cita confirmada</b> y lo verás en 'Hoy' el día de la llamada."},
+  {n:"4", ico:"📞", t:"Haz la llamada", d:"Tras hablar, pulsa <b>Llamada hecha</b> y pasa a <b>Cita realizada</b>. Si no apareció, marca <b>No-show</b>. La llamada pasa a la zona de <b>Pasadas · pendientes de registrar resultado</b>. Si te pidió moverla, usa <b>Reagendar</b>."},
   {n:"5", ico:"💸", t:"Registra el resultado", d:"Si vende: <b>Registrar pago</b> → eliges el formato real de Hotmart (Anual 1.800 €, Semestral 1.200 €, Solo nutrición o Reserva), copias el <b>🔗 enlace de pago</b> y se calcula el <b>cash collected</b> + el calendario de cobros. Si no: <b>No compra</b>. El overview y los KPIs se actualizan al instante."},
   {n:"6", ico:"📈", t:"Mira tus Ventas & KPIs", d:"En <b>Ventas &amp; KPIs</b> ves tu <b>objetivo vs alcanzado</b> por día/semana/mes, el <b>cuello de botella por tendencia</b> del embudo (qué etapa frena) y la <b>revisión de tus llamadas</b> (Fathom) con resumen y notas. Todo filtrado por ti."},
 ];
 function renderGuia(){
   const flow=[
-    {t:"Nuevo",c:"var(--blue)"},{t:"Validado",c:"#A78BFA"},{t:"Confirmado",c:"var(--brand)"},{t:"Llamada",c:"var(--amber)"},{t:"Pago / resultado",c:"var(--green)"},
+    {t:"Cita agendada",c:"var(--blue)"},{t:"Cualificado",c:"var(--brand)"},{t:"Cita confirmada",c:"#A78BFA"},{t:"Cita realizada",c:"var(--amber)"},{t:"Pago hecho",c:"var(--green)"},
   ];
   let html=`<div class="guide-callout"><span class="gci">🎯</span><b>La regla de oro:</b> arriba a la derecha eliges la <b>vista</b> con 3 opciones: <b>General</b> (el equipo entero: Pascu + Álvaro juntos), <b>Pascu</b> o <b>Álvaro</b> (solo ese closer). En <b>General</b> ves los totales del equipo y quién va por delante; en Pascu/Álvaro ves solo sus leads y sus KPIs. Avanzas cada lead de izquierda a derecha. Cuando no sepas qué hacer, mira <b>Mi panel → Hoy</b> y <b>Pendiente de completar</b>.</div>`;
   html+=`<div class="guide-flow">`;
@@ -2401,7 +2712,7 @@ function go(v){ VIEW=v; renderActive(); }
 function renderActive(){
   document.querySelectorAll(".view").forEach(el=>el.classList.remove("active"));
   document.getElementById("view-"+VIEW).classList.add("active");
-  document.querySelectorAll("#nav a").forEach(a=>a.classList.toggle("active", a.dataset.view===VIEW));
+  document.querySelectorAll("#nav a, #mobilenav a").forEach(a=>a.classList.toggle("active", a.dataset.view===VIEW));
   document.getElementById("page-title").childNodes[0].nodeValue=TITULOS[VIEW][0];
   document.getElementById("page-sub").textContent=TITULOS[VIEW][1];
   if(VIEW==="overview") renderOverview();
@@ -2412,12 +2723,16 @@ function renderActive(){
 }
 function updateNav(){
   const hoy=tareasHoy().length, pend=tareasPendientes().length;
-  const activos=misLeads().filter(l=>ESTADOS[l.estado].grupo==="activo").length;
-  const futuras=misLeads().filter(l=>esFuturo(l.llamada)&&ESTADOS[l.estado].grupo==="activo").length;
+  const activos=misLeads().filter(l=>ESTADOS[l.estado]?.grupo==="activo").length;
+  const futuras=misLeads().filter(l=>esFuturo(l.llamada)&&ESTADOS[l.estado]?.grupo==="activo").length;
   const pasPend=misLeads().filter(l=>l.estado==="realizada").length;
   document.getElementById("nc-hoy").textContent=hoy;
   document.getElementById("nc-pipe").textContent=activos;
   document.getElementById("nc-agenda").textContent=futuras+pasPend;
+  // contadores del nav inferior (móvil)
+  const setMnc=(id,n)=>{ const el=document.getElementById(id); if(el){ el.textContent=n; el.classList.toggle("show", n>0); } };
+  setMnc("mnc-hoy", hoy);
+  setMnc("mnc-agenda", futuras+pasPend);
 }
 function rerender(){ renderActive(); updateNav(); }
 
@@ -2436,9 +2751,16 @@ document.getElementById("nav").addEventListener("click",e=>{
   const a=e.target.closest("a"); if(!a) return;
   VIEW=a.dataset.view; renderActive();
 });
+const _mnav=document.getElementById("mobilenav");
+if(_mnav){ _mnav.addEventListener("click",e=>{
+  const a=e.target.closest("a"); if(!a) return;
+  VIEW=a.dataset.view; closeDrawer(); renderActive();
+  try{ window.scrollTo({top:0,behavior:"smooth"}); }catch(_){ window.scrollTo(0,0); }
+}); }
 document.getElementById("closer-seg").addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
   CLOSER=b.dataset.closer;
+  try{ localStorage.setItem("dvk_closer", CLOSER); }catch(_){}
   document.querySelectorAll("#closer-seg button").forEach(x=>x.classList.toggle("on",x.dataset.closer===CLOSER));
   closeDrawer();
   callSel=null; // recalcular la llamada seleccionada para el nuevo closer
@@ -2451,8 +2773,14 @@ document.getElementById("pipe-filter").addEventListener("click",e=>{
   document.querySelectorAll("#pipe-filter button").forEach(x=>x.classList.toggle("on",x.dataset.f===PIPE_FILTER));
   renderPipeline();
 });
+/* buscador de leads (con debounce) */
+let _buscarTimer=null;
+const _inpBuscar=document.getElementById("buscar-lead");
+if(_inpBuscar){ _inpBuscar.addEventListener("input",()=>{ clearTimeout(_buscarTimer); _buscarTimer=setTimeout(()=>{ PIPE_BUSCAR=_inpBuscar.value||""; renderPipeline(); },120); }); }
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ closeDrawer(); closeGuide(); } });
 
+// Sincroniza el botón de vista activo con el closer restaurado de localStorage
+document.querySelectorAll("#closer-seg button").forEach(x=>x.classList.toggle("on",x.dataset.closer===CLOSER));
 rerender();
 /* el login está en el HTML tras este <script>; lo lanzamos cuando el DOM esté listo */
 if(document.readyState==="loading"){ document.addEventListener("DOMContentLoaded", iniciarGHL); }
